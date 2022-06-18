@@ -1,6 +1,8 @@
 
 #include <X11/Xlib.h>
 
+#pragma once
+
 #include <memory>
 #include <unordered_map>
 
@@ -36,4 +38,8 @@ class WindowManager {
     const Window m_root;
     static bool m_wm_detected;
     std::unordered_map<Window, Window> m_clients;  // Map top-level windows to their frame windows
+
+    std::pair<int, int> m_drag_start_pos;
+    std::pair<int, int> m_drag_start_frame_pos;
+    std::pair<int, int> m_drag_start_frame_size;
 };

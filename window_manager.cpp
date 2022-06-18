@@ -2,8 +2,7 @@
 
 #include <glog/logging.h>
 
-#include <algorithm>
-
+using std::pair;
 using std::unique_ptr;
 
 bool WindowManager::m_wm_detected;
@@ -145,15 +144,44 @@ void WindowManager::OnUnmapNotify(const XUnmapEvent& e) {
 }
 
 void WindowManager::OnButtonPress(const XButtonEvent& e) {
-    LOG(INFO) << "Button press";
+    CHECK(m_clients.count(e.window));
+    const Window frame = m_clients[e.window];
+
+    // Save initial cursor position
+    m_drag_start_pos = {e.x_root, e.y_root};
+
+    // Save initial window info
+    Window returned_root;
+    // TODO: Try using nullptr for unused values
+    int x, y;
+    unsigned width, height, border_width, depth;
+    CHECK(XGetGeometry(
+        m_display,
+        frame,
+        &returned_root,
+        &x, &y,
+        &width, &height,
+        &border_width,
+        &depth));
+
+    m_drag_start_frame_pos = {x, y};
+    m_drag_start_frame_size = {width, height};
+
+    XRaiseWindow(m_display, frame);
 }
 
-void WindowManager::OnButtonRelease(const XButtonEvent& e) {
-    LOG(INFO) << "Button release";
-}
+void WindowManager::OnButtonRelease(const XButtonEvent& e) {}
 
 void WindowManager::OnMotionNotify(const XMotionEvent& e) {
-    LOG(INFO) << "Motion notify";
+    CHECK(m_clients.count(e.window));
+    const Window frame = m_clients[e.window];
+    const pair<int, int> drag_pos = {e.x_root, e.y_root};
+    const pair<int, int> delta = {drag_pos.first - m_drag_start_pos.first,
+                                  drag_pos.second - m_drag_start_pos.second};
+    const pair<int, int> dest_frame_pos = {m_drag_start_frame_pos.first + delta.first,
+                                           m_drag_start_frame_pos.second + delta.second};
+
+    XMoveWindow(m_display, frame, dest_frame_pos.first, dest_frame_pos.second);
 }
 
 void WindowManager::Frame(Window w) {
@@ -172,10 +200,8 @@ void WindowManager::Frame(Window w) {
     const Window frame = XCreateSimpleWindow(
         m_display,
         m_root,
-        x_window_attrs.x,
-        x_window_attrs.y,
-        x_window_attrs.width,
-        x_window_attrs.height,
+        x_window_attrs.x, x_window_attrs.y,
+        x_window_attrs.width, x_window_attrs.height,
         BORDER_WIDTH,
         BORDER_COLOR,
         BG_COLOR);
@@ -190,7 +216,7 @@ void WindowManager::Frame(Window w) {
     XGrabButton(
         m_display,
         Button1,
-        Mod1Mask,
+        AnyModifier,
         w,
         false,
         ButtonPressMask | ButtonReleaseMask | ButtonMotionMask,
