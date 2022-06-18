@@ -1,4 +1,4 @@
-# MSWM
+# mswm
 
 This is a simple X11 Window Manager written in C++.
 
