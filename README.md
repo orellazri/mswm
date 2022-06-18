@@ -2,7 +2,7 @@
 
 Simple X11 Window Manager written in C++
 
-![Demo](demo.png)
+![Demo](assets/demo.png)
 
 ## Usage
 
@@ -20,6 +20,7 @@ Simple X11 Window Manager written in C++
 - [google-glog](https://github.com/google/glog) library
 - [Xephyr](https://www.freedesktop.org/wiki/Software/Xephyr/)
 - xinit and X utilites
+- [feh](https://feh.finalrewind.org/)
 
 ### Installation and Running
 
