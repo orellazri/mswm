@@ -67,6 +67,18 @@ void WindowManager::Run() {
             case UnmapNotify:
                 OnUnmapNotify(e.xunmap);
                 break;
+            case ButtonPress:
+                OnButtonPress(e.xbutton);
+                break;
+            case ButtonRelease:
+                OnButtonRelease(e.xbutton);
+                break;
+            case MotionNotify:
+                // Skip any pending motion events
+                while (XCheckTypedWindowEvent(m_display, e.xmotion.window, MotionNotify, &e)) {
+                }
+                OnMotionNotify(e.xmotion);
+                break;
             default:
                 LOG(WARNING) << "Ignored event";
         }
@@ -129,6 +141,18 @@ void WindowManager::OnUnmapNotify(const XUnmapEvent& e) {
     Unframe(e.window);
 }
 
+void WindowManager::OnButtonPress(const XButtonEvent& e) {
+    LOG(INFO) << "Button press";
+}
+
+void WindowManager::OnButtonRelease(const XButtonEvent& e) {
+    LOG(INFO) << "Button release";
+}
+
+void WindowManager::OnMotionNotify(const XMotionEvent& e) {
+    LOG(INFO) << "Motion notify";
+}
+
 void WindowManager::Frame(Window w) {
     const unsigned int BORDER_WIDTH = 3;
     const unsigned long BORDER_COLOR = 0x6c5ce7;
@@ -159,7 +183,21 @@ void WindowManager::Frame(Window w) {
     XMapWindow(m_display, frame);
     m_clients[w] = frame;
 
-    LOG(INFO) << "Framed window " << w << " [" << frame << "]";
+    // Move windows with alt + left mouse button
+    XGrabButton(
+        m_display,
+        Button1,
+        Mod1Mask,
+        w,
+        false,
+        ButtonPressMask | ButtonReleaseMask | ButtonMotionMask,
+        GrabModeAsync,
+        GrabModeAsync,
+        None,
+        None);
+
+    LOG(INFO)
+        << "Framed window " << w << " [" << frame << "]";
 }
 
 void WindowManager::Unframe(Window w) {

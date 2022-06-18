@@ -27,6 +27,9 @@ class WindowManager {
     void OnMapRequest(const XMapRequestEvent& e);
     void OnMapNotify(const XMapEvent& e);
     void OnUnmapNotify(const XUnmapEvent& e);
+    void OnButtonPress(const XButtonEvent& e);
+    void OnButtonRelease(const XButtonEvent& e);
+    void OnMotionNotify(const XMotionEvent& e);
 
    private:
     Display* m_display;
