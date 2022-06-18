@@ -5,6 +5,7 @@
 
 #include <memory>
 #include <unordered_map>
+#include <vector>
 
 static const unsigned int BORDER_WIDTH_INACTIVE = 1;
 static const unsigned int BORDER_WIDTH_ACTIVE = 3;
@@ -44,7 +45,9 @@ class WindowManager {
     Display* m_display;
     const Window m_root;
     static bool m_wm_detected;
-    std::unordered_map<Window, Window> m_clients;  // Map top-level windows to their frame windows
+
+    std::unordered_map<Window, Window> m_clients;  // Maps top-level windows to their frame windows
+    std::vector<Window> m_inactive_windows;        // List of inactive windows
 
     Window m_active_window;
 

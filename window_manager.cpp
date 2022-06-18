@@ -14,7 +14,8 @@ using std::unique_ptr;
 
 bool WindowManager::m_wm_detected;
 
-unique_ptr<WindowManager> WindowManager::Create() {
+unique_ptr<WindowManager>
+WindowManager::Create() {
     Display* display = XOpenDisplay(nullptr);
     if (display == nullptr) {
         LOG(ERROR) << "Failed to open X display " << XDisplayName(nullptr);
@@ -188,12 +189,24 @@ void WindowManager::OnButtonPress(const XButtonEvent& e) {
     if (m_active_window != e.window) {
         Reframe(e.window, true);
         m_active_window = e.window;
+
+        // Remove window from inactive windows if it's in the vector
+        auto f = find(m_inactive_windows.begin(), m_inactive_windows.end(), e.window);
+        if (f != m_inactive_windows.end()) {
+            LOG(INFO) << "Remove from inactive";
+            m_inactive_windows.erase(f);
+        }
     }
 
     for (auto& client : m_clients) {
         if (client.first == m_active_window)
             continue;
-        Reframe(client.first, false);
+
+        // Reframe window if it's not already inactive
+        if (find(m_inactive_windows.begin(), m_inactive_windows.end(), client.first) == m_inactive_windows.end()) {
+            Reframe(client.first, false);
+            m_inactive_windows.push_back(client.first);
+        }
     }
 
     XRaiseWindow(m_display, m_clients[m_active_window]);
