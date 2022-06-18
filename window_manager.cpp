@@ -3,6 +3,9 @@
 #include <X11/cursorfont.h>
 #include <glog/logging.h>
 
+#include <algorithm>
+
+using std::max;
 using std::pair;
 using std::unique_ptr;
 
@@ -43,7 +46,7 @@ void WindowManager::Run() {
     while (true) {
         XEvent e;
         XNextEvent(m_display, &e);
-        LOG(INFO) << "Received event: " << e.type;
+        // LOG(INFO) << "Received event: " << e.type;
 
         switch (e.type) {
             case CreateNotify:
@@ -83,7 +86,7 @@ void WindowManager::Run() {
                 OnMotionNotify(e.xmotion);
                 break;
             default:
-                LOG(WARNING) << "Ignored event";
+                LOG(WARNING) << "Ignored event: " << e.type;
         }
     }
 }
@@ -153,15 +156,16 @@ void WindowManager::OnButtonPress(const XButtonEvent& e) {
 
     // Save initial window info
     Window returned_root;
-    // TODO: Try using nullptr for unused values
     int x, y;
     unsigned width, height, border_width, depth;
     CHECK(XGetGeometry(
         m_display,
         frame,
         &returned_root,
-        &x, &y,
-        &width, &height,
+        &x,
+        &y,
+        &width,
+        &height,
         &border_width,
         &depth));
 
@@ -179,10 +183,28 @@ void WindowManager::OnMotionNotify(const XMotionEvent& e) {
     const pair<int, int> drag_pos = {e.x_root, e.y_root};
     const pair<int, int> delta = {drag_pos.first - m_drag_start_pos.first,
                                   drag_pos.second - m_drag_start_pos.second};
-    const pair<int, int> dest_frame_pos = {m_drag_start_frame_pos.first + delta.first,
-                                           m_drag_start_frame_pos.second + delta.second};
 
-    XMoveWindow(m_display, frame, dest_frame_pos.first, dest_frame_pos.second);
+    // Alt
+    if (e.state & Mod1Mask) {
+        // Left button to move
+        if (e.state & Button1Mask) {
+            const pair<int, int> dest_frame_pos = {m_drag_start_frame_pos.first + delta.first,
+                                                   m_drag_start_frame_pos.second + delta.second};
+            XMoveWindow(m_display, frame, dest_frame_pos.first, dest_frame_pos.second);
+        }
+
+        // Right button to reisze
+        if (e.state & Button3Mask) {
+            const pair<int, int> size_delta = {max(delta.first, -m_drag_start_frame_size.first),
+                                               max(delta.second, -m_drag_start_frame_size.second)};
+            const pair<int, int> dest_frame_size = {m_drag_start_frame_size.first + size_delta.first,
+                                                    m_drag_start_frame_size.second + size_delta.second};
+
+            // Resize window and frame
+            XResizeWindow(m_display, e.window, dest_frame_size.first, dest_frame_size.second);
+            XResizeWindow(m_display, frame, dest_frame_size.first, dest_frame_size.second);
+        }
+    }
 }
 
 void WindowManager::Frame(Window w) {
@@ -213,10 +235,10 @@ void WindowManager::Frame(Window w) {
     XMapWindow(m_display, frame);
     m_clients[w] = frame;
 
-    // Move windows with alt + left mouse button
+    // Capture mouse buttons
     XGrabButton(
         m_display,
-        Button1,
+        AnyButton,
         AnyModifier,
         w,
         false,
