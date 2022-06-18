@@ -6,6 +6,12 @@
 #include <memory>
 #include <unordered_map>
 
+static const unsigned int BORDER_WIDTH_INACTIVE = 1;
+static const unsigned int BORDER_WIDTH_ACTIVE = 3;
+static const unsigned long BORDER_COLOR_INACTIVE = 0x2d2b40;
+static const unsigned long BORDER_COLOR_ACTIVE = 0x6c5ce7;
+static const unsigned long BG_COLOR = 0xdfe6e9;
+
 class WindowManager {
    public:
     static std::unique_ptr<WindowManager> Create();
@@ -17,6 +23,7 @@ class WindowManager {
 
     void Frame(Window w);
     void Unframe(Window w);
+    void Reframe(Window w, bool active);
 
     static int OnXError(Display* display, XErrorEvent* e);
     static int OnWMDetected(Display* display, XErrorEvent* e);
@@ -38,6 +45,8 @@ class WindowManager {
     const Window m_root;
     static bool m_wm_detected;
     std::unordered_map<Window, Window> m_clients;  // Map top-level windows to their frame windows
+
+    Window m_active_window;
 
     std::pair<int, int> m_drag_start_pos;
     std::pair<int, int> m_drag_start_frame_pos;
