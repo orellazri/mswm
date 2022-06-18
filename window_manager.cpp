@@ -1,5 +1,6 @@
 #include "window_manager.hpp"
 
+#include <X11/cursorfont.h>
 #include <glog/logging.h>
 
 using std::pair;
@@ -36,7 +37,7 @@ void WindowManager::Run() {
     XSetErrorHandler(&WindowManager::OnXError);
 
     // Show mouse cursor
-    XDefineCursor(m_display, m_root, XCreateFontCursor(m_display, 132));
+    XDefineCursor(m_display, m_root, XCreateFontCursor(m_display, XC_top_left_arrow));
 
     // Main event loop
     while (true) {
@@ -187,7 +188,7 @@ void WindowManager::OnMotionNotify(const XMotionEvent& e) {
 void WindowManager::Frame(Window w) {
     const unsigned int BORDER_WIDTH = 3;
     const unsigned long BORDER_COLOR = 0x6c5ce7;
-    const unsigned long BG_COLOR = 0xa29bfe;
+    const unsigned long BG_COLOR = 0xffffff;
 
     // Don't frame windows we've already framed
     CHECK(!m_clients.count(w));
