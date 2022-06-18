@@ -289,6 +289,7 @@ void WindowManager::Frame(Window w) {
 }
 
 void WindowManager::Unframe(Window w) {
+    CHECK(m_clients.count(w));
     const Window frame = m_clients[w];
     XUnmapWindow(m_display, frame);
     XReparentWindow(m_display, w, m_root, 0, 0);
