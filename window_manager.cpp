@@ -188,7 +188,7 @@ void WindowManager::OnMotionNotify(const XMotionEvent& e) {
 void WindowManager::Frame(Window w) {
     const unsigned int BORDER_WIDTH = 3;
     const unsigned long BORDER_COLOR = 0x6c5ce7;
-    const unsigned long BG_COLOR = 0xffffff;
+    const unsigned long BG_COLOR = 0xdfe6e9;
 
     // Don't frame windows we've already framed
     CHECK(!m_clients.count(w));
