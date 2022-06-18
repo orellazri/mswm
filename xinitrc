@@ -1,5 +1,5 @@
-xterm &
 xeyes &
+sleep 1 && xterm &
 feh --bg-fill ./assets/wallpaper.jpg &
 export GLOG_logtostderr=1
 exec ./mswm

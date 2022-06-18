@@ -189,7 +189,7 @@ void WindowManager::OnButtonPress(const XButtonEvent& e) {
     for (auto& client : m_clients) {
         if (client.first == e.window) {
             // Current window (active)
-            XSetWindowBorderWidth(m_display, frame, 3);
+            XSetWindowBorderWidth(m_display, client.second, 3);
         } else {
             // Every other window
             XSetWindowBorderWidth(m_display, client.second, 1);
@@ -255,13 +255,13 @@ void WindowManager::OnMotionNotify(const XMotionEvent& e) {
 }
 
 void WindowManager::Frame(Window w) {
+    // Don't frame windows we've already framed
+    CHECK(!m_clients.count(w));
+
     const unsigned int BORDER_WIDTH = 1;
     // const unsigned long BORDER_COLOR = 0x6c5ce7;
     const unsigned long BORDER_COLOR = 0x2d2b40;
     const unsigned long BG_COLOR = 0xdfe6e9;
-
-    // Don't frame windows we've already framed
-    CHECK(!m_clients.count(w));
 
     // Retrieve window attributes
     XWindowAttributes x_window_attrs;
@@ -296,8 +296,7 @@ void WindowManager::Frame(Window w) {
         None,
         None);
 
-    LOG(INFO)
-        << "Framed window " << w << " [" << frame << "]";
+    LOG(INFO) << "Framed window " << w << " [" << frame << "]";
 }
 
 void WindowManager::Unframe(Window w) {
