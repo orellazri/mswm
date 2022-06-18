@@ -36,6 +36,9 @@ void WindowManager::Run() {
     }
     XSetErrorHandler(&WindowManager::OnXError);
 
+    // Show mouse cursor
+    XDefineCursor(m_display, m_root, XCreateFontCursor(m_display, 132));
+
     // Main event loop
     while (true) {
         XEvent e;
