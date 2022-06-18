@@ -17,7 +17,7 @@ Simple [Stacking](https://en.wikipedia.org/wiki/Stacking_window_manager), [Re-pa
 
 ### Prerequisites
 
-- C++ 11 compiler
+- C++ 14 compiler
 - [GNU Make](https://www.gnu.org/software/make/)
 - Xlib headers and libraries
 - [google-glog](https://github.com/google/glog) library
