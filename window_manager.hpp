@@ -47,7 +47,7 @@ class WindowManager {
     static bool m_wm_detected;
 
     std::unordered_map<Window, Window> m_clients;  // Maps top-level windows to their frame windows
-    std::vector<Window> m_inactive_windows;        // List of inactive windows
+    std::vector<Window> m_inactive_windows;        // Vector of inactive windows to avoid multiple reframes
 
     Window m_active_window;
 
