@@ -80,7 +80,7 @@ int WindowManager::OnWMDetected(Display* display, XErrorEvent* e) {
 }
 
 int WindowManager::OnXError(Display* display, XErrorEvent* e) {
-    LOG(ERROR) << "Received X Error: " << int(e->error_code);
+    LOG(ERROR) << "Received X Error: " << int(e->error_code) << " from request: " << int(e->request_code);
     return 0;
 }
 
