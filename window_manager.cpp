@@ -185,6 +185,17 @@ void WindowManager::OnButtonPress(const XButtonEvent& e) {
 
     XRaiseWindow(m_display, frame);
 
+    // Change frame border on all windows
+    for (auto& client : m_clients) {
+        if (client.first == e.window) {
+            // Current window (active)
+            XSetWindowBorderWidth(m_display, frame, 3);
+        } else {
+            // Every other window
+            XSetWindowBorderWidth(m_display, client.second, 1);
+        }
+    }
+
     // Alt
     if (e.state & Mod1Mask) {
         // Middle button to close
@@ -244,8 +255,9 @@ void WindowManager::OnMotionNotify(const XMotionEvent& e) {
 }
 
 void WindowManager::Frame(Window w) {
-    const unsigned int BORDER_WIDTH = 3;
-    const unsigned long BORDER_COLOR = 0x6c5ce7;
+    const unsigned int BORDER_WIDTH = 1;
+    // const unsigned long BORDER_COLOR = 0x6c5ce7;
+    const unsigned long BORDER_COLOR = 0x2d2b40;
     const unsigned long BG_COLOR = 0xdfe6e9;
 
     // Don't frame windows we've already framed
