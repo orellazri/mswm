@@ -42,4 +42,7 @@ class WindowManager {
     std::pair<int, int> m_drag_start_pos;
     std::pair<int, int> m_drag_start_frame_pos;
     std::pair<int, int> m_drag_start_frame_size;
+
+    const Atom WM_PROTOCOLS;
+    const Atom WM_DELETE_WINDOW;
 };

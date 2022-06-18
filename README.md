@@ -8,6 +8,7 @@ Simple X11 Window Manager written in C++
 
 - **Alt + Left Click**: Move window
 - **Alt + Right Click**: Resize window
+- **Alt + Middle Click**: Close window
 
 ## Instructions
 

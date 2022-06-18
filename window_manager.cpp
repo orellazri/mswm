@@ -5,6 +5,9 @@
 
 #include <algorithm>
 
+#include "utils.hpp"
+
+using std::find;
 using std::max;
 using std::pair;
 using std::unique_ptr;
@@ -20,7 +23,10 @@ unique_ptr<WindowManager> WindowManager::Create() {
     return unique_ptr<WindowManager>(new WindowManager(display));
 }
 
-WindowManager::WindowManager(Display* display) : m_display(CHECK_NOTNULL(display)), m_root(DefaultRootWindow(m_display)) {
+WindowManager::WindowManager(Display* display) : m_display(CHECK_NOTNULL(display)),
+                                                 m_root(DefaultRootWindow(m_display)),
+                                                 WM_PROTOCOLS(XInternAtom(m_display, "WM_PROTOCOLS", false)),
+                                                 WM_DELETE_WINDOW(XInternAtom(m_display, "WM_DELETE_WINDOW", false)) {
 }
 
 WindowManager::~WindowManager() {
@@ -98,7 +104,12 @@ int WindowManager::OnWMDetected(Display* display, XErrorEvent* e) {
 }
 
 int WindowManager::OnXError(Display* display, XErrorEvent* e) {
-    LOG(ERROR) << "Received X Error: " << int(e->error_code) << " from request: " << int(e->request_code);
+    char error_text[1024] = {0};
+    XGetErrorText(display, e->error_code, error_text, sizeof(error_text));
+    LOG(ERROR) << "Received X Error:"
+               << "\n    " << error_text << " (" << int(e->error_code) << ")"
+               << "\n    Request: " << XRequestCodeToString(e->request_code) << " (" << int(e->request_code) << ")"
+               << "\n    Resource ID: " << e->resourceid;
     return 0;
 }
 
@@ -173,6 +184,31 @@ void WindowManager::OnButtonPress(const XButtonEvent& e) {
     m_drag_start_frame_size = {width, height};
 
     XRaiseWindow(m_display, frame);
+
+    // Alt
+    if (e.state & Mod1Mask) {
+        // Middle button to close
+        if (e.button == Button2) {
+            // Try to gracefully kill client if the client supports the WM_DELETE_WINDOW behavior.
+            // Otherwise, kill it.
+            Atom* supported_protocols;
+            int num_supported_protocols;
+            if (XGetWMProtocols(m_display, e.window, &supported_protocols, &num_supported_protocols) &&
+                find(supported_protocols, supported_protocols + num_supported_protocols, WM_DELETE_WINDOW) != supported_protocols + num_supported_protocols) {
+                LOG(INFO) << "Gracefully deleting window " << e.window;
+                XEvent msg = {0};
+                msg.xclient.type = ClientMessage;
+                msg.xclient.message_type = WM_PROTOCOLS;
+                msg.xclient.window = e.window;
+                msg.xclient.format = 32;
+                msg.xclient.data.l[0] = WM_DELETE_WINDOW;
+                CHECK(XSendEvent(m_display, e.window, false, 0, &msg));
+            } else {
+                LOG(INFO) << "Killing window " << e.window;
+                XKillClient(m_display, e.window);
+            }
+        }
+    }
 }
 
 void WindowManager::OnButtonRelease(const XButtonEvent& e) {}
