@@ -134,6 +134,9 @@ void WindowManager::Frame(Window w) {
     const unsigned long BORDER_COLOR = 0xff0000;
     const unsigned long BG_COLOR = 0x0000ff;
 
+    // Don't frame windows we've already framed
+    CHECK(!m_clients.count(w));
+
     // Retrieve window attributes
     XWindowAttributes x_window_attrs;
     CHECK(XGetWindowAttributes(m_display, w, &x_window_attrs));
