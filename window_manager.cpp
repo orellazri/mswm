@@ -14,8 +14,7 @@ using std::unique_ptr;
 
 bool WindowManager::m_wm_detected;
 
-unique_ptr<WindowManager>
-WindowManager::Create() {
+unique_ptr<WindowManager> WindowManager::Create() {
     Display* display = XOpenDisplay(nullptr);
     if (display == nullptr) {
         LOG(ERROR) << "Failed to open X display " << XDisplayName(nullptr);
