@@ -6,7 +6,7 @@ Simple [Stacking](https://en.wikipedia.org/wiki/Stacking_window_manager), [Re-pa
 
 ## Usage
 
-- ** Left Click**: Focus window
+- **Left Click**: Focus window
 - **Alt + Left Click**: Move window
 - **Alt + Right Click**: Resize window
 - **Alt + Middle Click**: Close window
