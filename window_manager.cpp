@@ -144,7 +144,7 @@ void WindowManager::Frame(Window w) {
     // Create frame
     const Window frame = XCreateSimpleWindow(
         m_display,
-        w,
+        m_root,
         x_window_attrs.x,
         x_window_attrs.y,
         x_window_attrs.width,
