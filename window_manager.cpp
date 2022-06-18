@@ -68,7 +68,7 @@ void WindowManager::Run() {
                 OnUnmapNotify(e.xunmap);
                 break;
             default:
-                LOG(WARNING) << "Ignoted event";
+                LOG(WARNING) << "Ignored event";
         }
     }
 }
