@@ -4,12 +4,12 @@ This is a simple X11 Window Manager written in C++.
 
 ![Demo](demo.png)
 
-## Instructions
-
-### Usage
+## Usage
 
 - **Alt + Left Click**: Move window
 - **Alt + Right Click**: Resize window
+
+## Instructions
 
 ### Prerequisites
 
