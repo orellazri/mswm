@@ -1,6 +1,6 @@
 # mswm
 
-Simple [Stacking](https://en.wikipedia.org/wiki/Stacking_window_manager), [Re-parenting](https://en.wikipedia.org/wiki/Re-parenting_window_manager) X11 Window Manager written in C++
+[Stacking](https://en.wikipedia.org/wiki/Stacking_window_manager), [Re-parenting](https://en.wikipedia.org/wiki/Re-parenting_window_manager) X11 Window Manager written in C++
 
 ![Demo](assets/demo.png)
 
