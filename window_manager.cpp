@@ -150,14 +150,12 @@ void WindowManager::OnMapRequest(const XMapRequestEvent& e) {
 void WindowManager::OnMapNotify(const XMapEvent& e) {}
 
 void WindowManager::OnUnmapNotify(const XUnmapEvent& e) {
-    // Currently commented out, and unframing when closing window.
+    if (!m_clients.count(e.window)) {
+        LOG(INFO) << "Ignore UnmapNotify for non-client window " << e.window;
+        return;
+    }
 
-    // if (!m_clients.count(e.window)) {
-    //     LOG(INFO) << "Ignore UnmapNotify for non-client window " << e.window;
-    //     return;
-    // }
-
-    // Unframe(e.window);
+    Unframe(e.window);
 }
 
 void WindowManager::OnButtonPress(const XButtonEvent& e) {
@@ -185,30 +183,32 @@ void WindowManager::OnButtonPress(const XButtonEvent& e) {
     m_drag_start_frame_pos = {x, y};
     m_drag_start_frame_size = {width, height};
 
-    if (m_active_window != e.window) {
-        Reframe(e.window, true);
-        m_active_window = e.window;
+    // if (m_active_window != e.window) {
+    //     Reframe(e.window, true);
+    //     m_active_window = e.window;
+    //
+    //     // Remove window from inactive windows if it's in the vector
+    //     auto f = find(m_inactive_windows.begin(), m_inactive_windows.end(), e.window);
+    //     if (f != m_inactive_windows.end()) {
+    //         LOG(INFO) << "Remove from inactive";
+    //         m_inactive_windows.erase(f);
+    //     }
+    // }
+    //
+    // for (auto& client : m_clients) {
+    //     if (client.first == m_active_window)
+    //         continue;
+    //
+    //     // Reframe window if it's not already inactive
+    //     if (find(m_inactive_windows.begin(), m_inactive_windows.end(), client.first) == m_inactive_windows.end()) {
+    //         Reframe(client.first, false);
+    //         m_inactive_windows.push_back(client.first);
+    //     }
+    // }
+    //
+    // XRaiseWindow(m_display, m_clients[m_active_window]);
 
-        // Remove window from inactive windows if it's in the vector
-        auto f = find(m_inactive_windows.begin(), m_inactive_windows.end(), e.window);
-        if (f != m_inactive_windows.end()) {
-            LOG(INFO) << "Remove from inactive";
-            m_inactive_windows.erase(f);
-        }
-    }
-
-    for (auto& client : m_clients) {
-        if (client.first == m_active_window)
-            continue;
-
-        // Reframe window if it's not already inactive
-        if (find(m_inactive_windows.begin(), m_inactive_windows.end(), client.first) == m_inactive_windows.end()) {
-            Reframe(client.first, false);
-            m_inactive_windows.push_back(client.first);
-        }
-    }
-
-    XRaiseWindow(m_display, m_clients[m_active_window]);
+    XRaiseWindow(m_display, e.window);
 
     // Alt
     if (e.state & Mod1Mask) {
@@ -228,7 +228,6 @@ void WindowManager::OnButtonPress(const XButtonEvent& e) {
                 msg.xclient.format = 32;
                 msg.xclient.data.l[0] = WM_DELETE_WINDOW;
                 CHECK(XSendEvent(m_display, e.window, false, 0, &msg));
-                Unframe(e.window);
             } else {
                 LOG(INFO) << "Killing window " << e.window;
                 XKillClient(m_display, e.window);
@@ -321,33 +320,33 @@ void WindowManager::Unframe(Window w) {
     LOG(INFO) << "Unframed window " << w << " [" << frame << "]";
 }
 
-void WindowManager::Reframe(Window w, bool active) {
-    CHECK(m_clients.count(w));
-    const Window frame = m_clients[w];
-
-    // Destroy old frame
-    XWindowAttributes frame_attrs;
-    CHECK(XGetWindowAttributes(m_display, frame, &frame_attrs));
-
-    XUnmapWindow(m_display, frame);
-    XReparentWindow(m_display, w, m_root, frame_attrs.x, frame_attrs.y);
-    XDestroyWindow(m_display, frame);
-
-    // Create new frame
-    XWindowAttributes window_attrs;
-    CHECK(XGetWindowAttributes(m_display, w, &window_attrs));
-
-    const Window new_frame = XCreateSimpleWindow(
-        m_display,
-        m_root,
-        window_attrs.x, window_attrs.y,
-        window_attrs.width, window_attrs.height,
-        active ? BORDER_WIDTH_ACTIVE : BORDER_WIDTH_INACTIVE,
-        active ? BORDER_COLOR_ACTIVE : BORDER_COLOR_INACTIVE,
-        BG_COLOR);
-
-    XSelectInput(m_display, new_frame, SubstructureRedirectMask | SubstructureNotifyMask);
-    XReparentWindow(m_display, w, new_frame, 0, 0);
-    XMapWindow(m_display, new_frame);
-    m_clients[w] = new_frame;
-}
+// void WindowManager::Reframe(Window w, bool active) {
+//     CHECK(m_clients.count(w));
+//     const Window frame = m_clients[w];
+//
+//     // Destroy old frame
+//     XWindowAttributes frame_attrs;
+//     CHECK(XGetWindowAttributes(m_display, frame, &frame_attrs));
+//
+//     XUnmapWindow(m_display, frame);
+//     XReparentWindow(m_display, w, m_root, frame_attrs.x, frame_attrs.y);
+//     XDestroyWindow(m_display, frame);
+//
+//     // Create new frame
+//     XWindowAttributes window_attrs;
+//     CHECK(XGetWindowAttributes(m_display, w, &window_attrs));
+//
+//     const Window new_frame = XCreateSimpleWindow(
+//         m_display,
+//         m_root,
+//         window_attrs.x, window_attrs.y,
+//         window_attrs.width, window_attrs.height,
+//         active ? BORDER_WIDTH_ACTIVE : BORDER_WIDTH_INACTIVE,
+//         active ? BORDER_COLOR_ACTIVE : BORDER_COLOR_INACTIVE,
+//         BG_COLOR);
+//
+//     XSelectInput(m_display, new_frame, SubstructureRedirectMask | SubstructureNotifyMask);
+//     XReparentWindow(m_display, w, new_frame, 0, 0);
+//     XMapWindow(m_display, new_frame);
+//     m_clients[w] = new_frame;
+// }
