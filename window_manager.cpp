@@ -190,7 +190,7 @@ void WindowManager::OnButtonPress(const XButtonEvent& e) {
     m_drag_start_frame_pos = {x, y};
     m_drag_start_frame_size = {width, height};
 
-    XRaiseWindow(m_display, e.window);
+    XRaiseWindow(m_display, frame);
 
     // Alt
     if (e.state & Mod1Mask) {
