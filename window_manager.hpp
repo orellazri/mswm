@@ -7,10 +7,6 @@
 #include <unordered_map>
 #include <vector>
 
-static const unsigned int BORDER_WIDTH = 1;
-static const unsigned long BORDER_COLOR = 0x2d2b40;
-static const unsigned long BG_COLOR = 0xdfe6e9;
-
 class WindowManager {
    public:
     static std::unique_ptr<WindowManager> Create();
@@ -22,6 +18,7 @@ class WindowManager {
 
     void Frame(Window w);
     void Unframe(Window w);
+    void SetWindowBorder(const Window& w, unsigned int width, const char* color_str);
 
     static int OnXError(Display* display, XErrorEvent* e);
     static int OnWMDetected(Display* display, XErrorEvent* e);

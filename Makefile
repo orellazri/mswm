@@ -6,7 +6,9 @@ LDFLAGS += `pkg-config --libs x11 libglog`
 all: mswm
 
 HEADERS = \
-    window_manager.hpp
+    window_manager.hpp \
+    utils.hpp \
+    config.hpp
 SOURCES = \
     window_manager.cpp \
     main.cpp

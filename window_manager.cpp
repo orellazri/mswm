@@ -6,6 +6,7 @@
 
 #include <algorithm>
 
+#include "config.hpp"
 #include "utils.hpp"
 
 using std::find;
@@ -190,7 +191,16 @@ void WindowManager::OnButtonPress(const XButtonEvent& e) {
     m_drag_start_frame_pos = {x, y};
     m_drag_start_frame_size = {width, height};
 
+    // Raise window and change border to active
     XRaiseWindow(m_display, frame);
+    SetWindowBorder(frame, BORDER_WIDTH_ACTIVE, BORDER_COLOR_ACTIVE_STR);
+
+    // Change border of all other windows to inactive
+    for (auto& client : m_clients) {
+        if (client.first == e.window)
+            continue;
+        SetWindowBorder(client.second, BORDER_WIDTH_INACTIVE, BORDER_COLOR_INACTIVE_STR);
+    }
 
     // Alt
     if (e.state & Mod1Mask) {
@@ -282,8 +292,8 @@ void WindowManager::Frame(Window w) {
         m_root,
         x_window_attrs.x, x_window_attrs.y,
         x_window_attrs.width, x_window_attrs.height,
-        BORDER_WIDTH,
-        BORDER_COLOR,
+        BORDER_WIDTH_INACTIVE,
+        BORDER_COLOR_INACTIVE,
         BG_COLOR);
 
     XSelectInput(m_display, frame, SubstructureRedirectMask | SubstructureNotifyMask);
@@ -328,4 +338,13 @@ void WindowManager::Unframe(Window w) {
     m_clients.erase(w);
 
     LOG(INFO) << "Unframed window " << w << " [" << frame << "]";
+}
+
+void WindowManager::SetWindowBorder(const Window& w, unsigned int width, const char* color_str) {
+    XSetWindowBorderWidth(m_display, w, width);
+
+    Colormap colormap = DefaultColormap(m_display, DefaultScreen(m_display));
+    XColor color;
+    CHECK(XAllocNamedColor(m_display, colormap, color_str, &color, &color));
+    XSetWindowBorder(m_display, w, color.pixel);
 }
