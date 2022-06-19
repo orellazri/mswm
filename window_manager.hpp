@@ -37,6 +37,8 @@ class WindowManager {
     void OnButtonPress(const XButtonEvent& e);
     void OnButtonRelease(const XButtonEvent& e);
     void OnMotionNotify(const XMotionEvent& e);
+    void OnKeyPress(const XKeyEvent& e);
+    void OnKeyRelease(const XKeyEvent& e);
 
    private:
     Display* m_display;

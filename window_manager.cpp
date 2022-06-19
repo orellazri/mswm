@@ -1,5 +1,6 @@
 #include "window_manager.hpp"
 
+#include <X11/Xutil.h>
 #include <X11/cursorfont.h>
 #include <glog/logging.h>
 
@@ -90,6 +91,12 @@ void WindowManager::Run() {
                 while (XCheckTypedWindowEvent(m_display, e.xmotion.window, MotionNotify, &e)) {
                 }
                 OnMotionNotify(e.xmotion);
+                break;
+            case KeyPress:
+                OnKeyPress(e.xkey);
+                break;
+            case KeyRelease:
+                OnKeyRelease(e.xkey);
                 break;
             default:
                 LOG(WARNING) << "Ignored event: " << e.type;
@@ -243,6 +250,24 @@ void WindowManager::OnMotionNotify(const XMotionEvent& e) {
     }
 }
 
+void WindowManager::OnKeyPress(const XKeyEvent& e) {
+    // Alt
+    if (e.state & Mod1Mask) {
+        // Tab to switch active window
+        if (e.keycode == XKeysymToKeycode(m_display, XK_Tab)) {
+            auto it = m_clients.find(e.window);
+            CHECK(it != m_clients.end());
+            it++;
+            if (it == m_clients.end())
+                it = m_clients.begin();
+            XRaiseWindow(m_display, it->second);
+            XSetInputFocus(m_display, it->first, RevertToPointerRoot, CurrentTime);
+        }
+    }
+}
+
+void WindowManager::OnKeyRelease(const XKeyEvent& e) {}
+
 void WindowManager::Frame(Window w) {
     // Don't frame windows we've already framed
     CHECK(!m_clients.count(w));
@@ -279,6 +304,16 @@ void WindowManager::Frame(Window w) {
         GrabModeAsync,
         None,
         None);
+
+    // Capture keyboard keys
+    XGrabKey(
+        m_display,
+        XKeysymToKeycode(m_display, XK_Tab),
+        Mod1Mask,
+        w,
+        false,
+        GrabModeAsync,
+        GrabModeAsync);
 
     LOG(INFO) << "Framed window " << w << " [" << frame << "]";
 }
