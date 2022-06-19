@@ -7,10 +7,8 @@
 #include <unordered_map>
 #include <vector>
 
-static const unsigned int BORDER_WIDTH_INACTIVE = 1;
-static const unsigned int BORDER_WIDTH_ACTIVE = 3;
-static const unsigned long BORDER_COLOR_INACTIVE = 0x2d2b40;
-static const unsigned long BORDER_COLOR_ACTIVE = 0x6c5ce7;
+static const unsigned int BORDER_WIDTH = 1;
+static const unsigned long BORDER_COLOR = 0x2d2b40;
 static const unsigned long BG_COLOR = 0xdfe6e9;
 
 class WindowManager {
@@ -24,7 +22,6 @@ class WindowManager {
 
     void Frame(Window w);
     void Unframe(Window w);
-    void Reframe(Window w, bool active);
 
     static int OnXError(Display* display, XErrorEvent* e);
     static int OnWMDetected(Display* display, XErrorEvent* e);
@@ -47,9 +44,6 @@ class WindowManager {
     static bool m_wm_detected;
 
     std::unordered_map<Window, Window> m_clients;  // Maps top-level windows to their frame windows
-    std::vector<Window> m_inactive_windows;        // Vector of inactive windows to avoid multiple reframes
-
-    Window m_active_window;
 
     std::pair<int, int> m_drag_start_pos;
     std::pair<int, int> m_drag_start_frame_pos;
