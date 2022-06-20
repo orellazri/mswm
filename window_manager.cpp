@@ -39,7 +39,17 @@ void WindowManager::Run() {
     // Initialization
     m_wm_detected = false;
     XSetErrorHandler(&WindowManager::OnWMDetected);
-    XSelectInput(m_display, m_root, SubstructureRedirectMask | SubstructureNotifyMask);
+    XSelectInput(m_display, m_root, SubstructureRedirectMask | SubstructureNotifyMask | ButtonPressMask);
+    XGrabButton(m_display,
+                AnyButton,
+                AnyModifier,
+                m_root,
+                true,
+                ButtonPressMask,
+                GrabModeAsync,
+                GrabModeAsync,
+                None,
+                None);
     XSync(m_display, false);
     if (m_wm_detected) {
         LOG(ERROR) << "Detected another window manager on display " << XDisplayString(m_display);
@@ -185,6 +195,10 @@ void WindowManager::OnUnmapNotify(const XUnmapEvent& e) {
 }
 
 void WindowManager::OnButtonPress(const XButtonEvent& e) {
+    LOG(INFO) << "OnButtonPress";
+    LOG(INFO) << e.subwindow;
+    return;
+
     CHECK(m_clients.count(e.window));
     const Window frame = m_clients[e.window];
 
@@ -327,29 +341,6 @@ void WindowManager::Frame(Window w, bool was_created_before_window_manager) {
     XReparentWindow(m_display, w, frame, 0, 0);
     XMapWindow(m_display, frame);
     m_clients[w] = frame;
-
-    // Capture mouse buttons
-    XGrabButton(
-        m_display,
-        AnyButton,
-        AnyModifier,
-        w,
-        false,
-        ButtonPressMask | ButtonReleaseMask | ButtonMotionMask,
-        GrabModeAsync,
-        GrabModeAsync,
-        None,
-        None);
-
-    // Capture keyboard keys
-    XGrabKey(
-        m_display,
-        XKeysymToKeycode(m_display, XK_Tab),
-        Mod1Mask,
-        w,
-        false,
-        GrabModeAsync,
-        GrabModeAsync);
 
     LOG(INFO) << "Framed window " << w << " [" << frame << "]";
 }
