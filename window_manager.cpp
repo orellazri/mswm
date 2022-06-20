@@ -137,17 +137,40 @@ void WindowManager::OnDestroyNotify(const XDestroyWindowEvent& e) {}
 
 void WindowManager::OnReparentNotify(const XReparentEvent& e) {}
 
-void WindowManager::OnConfigureRequest(const XConfigureRequestEvent& e) {}
+void WindowManager::OnConfigureRequest(const XConfigureRequestEvent& e) {
+    XWindowChanges wc;
+    wc.x = e.x;
+    wc.y = e.y;
+    wc.width = e.width;
+    wc.height = e.height;
+    wc.border_width = e.border_width;
+    wc.sibling = e.above;
+    wc.stack_mode = e.detail;
+    XConfigureWindow(m_display, e.window, e.value_mask, &wc);
+}
 
 void WindowManager::OnConfigureNotify(const XConfigureEvent& e) {}
 
-void WindowManager::OnMapRequest(const XMapRequestEvent& e) {}
+void WindowManager::OnMapRequest(const XMapRequestEvent& e) {
+    XMapWindow(m_display, e.window);
+    XRaiseWindow(m_display, e.window);
+    SetWindowBorder(e.window, BORDER_WIDTH_ACTIVE, BORDER_COLOR_ACTIVE);
+
+    LOG(INFO) << "Mapped window " << e.window;
+}
 
 void WindowManager::OnMapNotify(const XMapEvent& e) {}
 
 void WindowManager::OnUnmapNotify(const XUnmapEvent& e) {}
 
-void WindowManager::OnButtonPress(const XButtonEvent& e) {}
+void WindowManager::OnButtonPress(const XButtonEvent& e) {
+    if (e.subwindow == 0)
+        return;
+
+    // Alt
+    if (e.state & Mod1Mask) {
+        }
+}
 
 void WindowManager::OnButtonRelease(const XButtonEvent& e) {}
 
