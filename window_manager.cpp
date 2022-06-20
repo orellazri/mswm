@@ -47,6 +47,19 @@ void WindowManager::Run() {
     }
     XSetErrorHandler(&WindowManager::OnXError);
 
+    // Grab X server to prevent windwos changing while we frame them
+    XGrabServer(m_display);
+    Window returned_root, returned_parent;
+    Window* top_level_windows;
+    unsigned int num_top_level_windows;
+    CHECK(XQueryTree(m_display, m_root, &returned_root, &returned_parent, &top_level_windows, &num_top_level_windows));
+    CHECK_EQ(returned_root, m_root);
+    for (size_t i = 0; i < num_top_level_windows; i++) {
+        Frame(top_level_windows[i], true);
+    }
+    XFree(top_level_windows);
+    XUngrabServer(m_display);
+
     // Show mouse cursor
     XDefineCursor(m_display, m_root, XCreateFontCursor(m_display, XC_top_left_arrow));
 
@@ -151,7 +164,7 @@ void WindowManager::OnConfigureRequest(const XConfigureRequestEvent& e) {
 void WindowManager::OnConfigureNotify(const XConfigureEvent& e) {}
 
 void WindowManager::OnMapRequest(const XMapRequestEvent& e) {
-    Frame(e.window);
+    Frame(e.window, false);
     XMapWindow(m_display, e.window);
 }
 
@@ -160,6 +173,11 @@ void WindowManager::OnMapNotify(const XMapEvent& e) {}
 void WindowManager::OnUnmapNotify(const XUnmapEvent& e) {
     if (!m_clients.count(e.window)) {
         LOG(INFO) << "Ignore UnmapNotify for non-client window " << e.window;
+        return;
+    }
+
+    if (e.event == m_root) {
+        LOG(INFO) << "Ignore UnmapNotify for reparented pre-existing window " << e.window;
         return;
     }
 
@@ -278,13 +296,21 @@ void WindowManager::OnKeyPress(const XKeyEvent& e) {
 
 void WindowManager::OnKeyRelease(const XKeyEvent& e) {}
 
-void WindowManager::Frame(Window w) {
+void WindowManager::Frame(Window w, bool was_created_before_window_manager) {
     // Don't frame windows we've already framed
     CHECK(!m_clients.count(w));
 
     // Retrieve window attributes
     XWindowAttributes x_window_attrs;
     CHECK(XGetWindowAttributes(m_display, w, &x_window_attrs));
+
+    // If window was created before the window manager started, we should frame it
+    // only if it's visible and doesn't set override_redirect
+    if (was_created_before_window_manager) {
+        if (x_window_attrs.override_redirect || x_window_attrs.map_state != IsViewable) {
+            return;
+        }
+    }
 
     // Create frame
     const Window frame = XCreateSimpleWindow(

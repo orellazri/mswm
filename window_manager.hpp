@@ -16,7 +16,7 @@ class WindowManager {
    private:
     WindowManager(Display* display);
 
-    void Frame(Window w);
+    void Frame(Window w, bool was_created_before_window_manager);
     void Unframe(Window w);
     void SetWindowBorder(const Window& w, unsigned int width, const char* color_str);
 
