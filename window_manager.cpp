@@ -39,17 +39,22 @@ void WindowManager::Run() {
     // Initialization
     m_wm_detected = false;
     XSetErrorHandler(&WindowManager::OnWMDetected);
-    XSelectInput(m_display, m_root, SubstructureRedirectMask | SubstructureNotifyMask | ButtonPressMask);
     XGrabButton(m_display,
                 AnyButton,
                 AnyModifier,
                 m_root,
                 true,
-                ButtonPressMask,
+                ButtonPressMask | ButtonReleaseMask | PointerMotionMask | OwnerGrabButtonMask,
                 GrabModeAsync,
                 GrabModeAsync,
                 None,
                 None);
+    XSelectInput(m_display,
+                 m_root,
+                 FocusChangeMask | PropertyChangeMask |
+                     SubstructureNotifyMask | SubstructureRedirectMask |
+                     KeyPressMask | ButtonPressMask);
+
     XSync(m_display, false);
     if (m_wm_detected) {
         LOG(ERROR) << "Detected another window manager on display " << XDisplayString(m_display);
@@ -99,7 +104,7 @@ void WindowManager::Run() {
                 break;
             case MotionNotify:
                 // Skip any pending motion events
-                while (XCheckTypedWindowEvent(m_display, e.xmotion.window, MotionNotify, &e)) {
+                while (XCheckTypedWindowEvent(m_display, e.xmotion.subwindow, MotionNotify, &e)) {
                 }
                 OnMotionNotify(e.xmotion);
                 break;
@@ -153,8 +158,8 @@ void WindowManager::OnConfigureNotify(const XConfigureEvent& e) {}
 
 void WindowManager::OnMapRequest(const XMapRequestEvent& e) {
     XMapWindow(m_display, e.window);
-    XRaiseWindow(m_display, e.window);
     SetWindowBorder(e.window, BORDER_WIDTH_ACTIVE, BORDER_COLOR_ACTIVE);
+    XRaiseWindow(m_display, e.window);
 
     m_windows.push_back(e.window);
 
@@ -166,7 +171,7 @@ void WindowManager::OnMapNotify(const XMapEvent& e) {}
 void WindowManager::OnUnmapNotify(const XUnmapEvent& e) {}
 
 void WindowManager::OnButtonPress(const XButtonEvent& e) {
-    if (e.subwindow == 0)
+    if (e.subwindow == None)
         return;
 
     // Save initial cursor position
@@ -229,7 +234,36 @@ void WindowManager::OnButtonPress(const XButtonEvent& e) {
 
 void WindowManager::OnButtonRelease(const XButtonEvent& e) {}
 
-void WindowManager::OnMotionNotify(const XMotionEvent& e) {}
+void WindowManager::OnMotionNotify(const XMotionEvent& e) {
+    if (e.subwindow == None)
+        return;
+
+    const pair<int, int> drag_pos = {e.x_root, e.y_root};
+    const pair<int, int> delta = {drag_pos.first - m_drag_start_pos.first,
+                                  drag_pos.second - m_drag_start_pos.second};
+
+    // Alt
+    if (e.state & Mod1Mask) {
+        // Left button to move
+        if (e.state & Button1Mask) {
+            const pair<int, int> dest_frame_pos = {m_drag_start_frame_pos.first + delta.first,
+                                                   m_drag_start_frame_pos.second + delta.second};
+            XMoveWindow(m_display, e.subwindow, dest_frame_pos.first, dest_frame_pos.second);
+        }
+
+        // Right button to reisze
+        if (e.state & Button3Mask) {
+            const pair<int, int> size_delta = {max(delta.first, -m_drag_start_frame_size.first),
+                                               max(delta.second, -m_drag_start_frame_size.second)};
+            const pair<int, int> dest_frame_size = {m_drag_start_frame_size.first + size_delta.first,
+                                                    m_drag_start_frame_size.second + size_delta.second};
+
+            // Resize window and frame
+            XResizeWindow(m_display, e.window, dest_frame_size.first, dest_frame_size.second);
+            XResizeWindow(m_display, e.subwindow, dest_frame_size.first, dest_frame_size.second);
+        }
+    }
+}
 
 void WindowManager::OnKeyPress(const XKeyEvent& e) {}
 
