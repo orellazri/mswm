@@ -4,7 +4,6 @@
 #pragma once
 
 #include <memory>
-#include <unordered_map>
 #include <vector>
 
 class WindowManager {
@@ -39,6 +38,7 @@ class WindowManager {
     Display* m_display;
     const Window m_root;
     static bool m_wm_detected;
+    std::vector<Window> m_windows;
 
     std::pair<int, int> m_drag_start_pos;
     std::pair<int, int> m_drag_start_frame_pos;
