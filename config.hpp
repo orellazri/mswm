@@ -3,3 +3,6 @@
 #define BORDER_COLOR_INACTIVE "rgb:2d/2b/40"
 #define BORDER_COLOR_ACTIVE "rgb:6c/5c/e7"
 #define BG_COLOR 0xdfe6e9
+
+#define MIN_WINDOW_WIDTH 100
+#define MIN_WINDOW_HEIGHT 100

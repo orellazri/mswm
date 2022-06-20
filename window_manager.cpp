@@ -271,11 +271,16 @@ void WindowManager::OnMotionNotify(const XMotionEvent& e) {
         if (e.state & Button3Mask) {
             const pair<int, int> size_delta = {max(delta.first, -m_drag_start_frame_size.first),
                                                max(delta.second, -m_drag_start_frame_size.second)};
-            const pair<int, int> dest_frame_size = {m_drag_start_frame_size.first + size_delta.first,
-                                                    m_drag_start_frame_size.second + size_delta.second};
+            pair<int, int> dest_frame_size = {m_drag_start_frame_size.first + size_delta.first,
+                                              m_drag_start_frame_size.second + size_delta.second};
 
-            // Resize window and frame
-            XResizeWindow(m_display, e.window, dest_frame_size.first, dest_frame_size.second);
+            // Restrict minimum window size
+            LOG(INFO) << dest_frame_size.first << " x " << dest_frame_size.second;
+            dest_frame_size.first = max(dest_frame_size.first, MIN_WINDOW_WIDTH);
+            dest_frame_size.second = max(dest_frame_size.second, MIN_WINDOW_HEIGHT);
+            LOG(INFO) << dest_frame_size.first << " x " << dest_frame_size.second;
+
+            // Resize window
             XResizeWindow(m_display, e.subwindow, dest_frame_size.first, dest_frame_size.second);
         }
     }
