@@ -2,6 +2,48 @@
 
 using std::string;
 
+string XEventCodeToString(int event_code) {
+    static const char* const X_EVENT_TYPE_NAMES[] = {
+        "",
+        "",
+        "KeyPress",
+        "KeyRelease",
+        "ButtonPress",
+        "ButtonRelease",
+        "MotionNotify",
+        "EnterNotify",
+        "LeaveNotify",
+        "FocusIn",
+        "FocusOut",
+        "KeymapNotify",
+        "Expose",
+        "GraphicsExpose",
+        "NoExpose",
+        "VisibilityNotify",
+        "CreateNotify",
+        "DestroyNotify",
+        "UnmapNotify",
+        "MapNotify",
+        "MapRequest",
+        "ReparentNotify",
+        "ConfigureNotify",
+        "ConfigureRequest",
+        "GravityNotify",
+        "ResizeRequest",
+        "CirculateNotify",
+        "CirculateRequest",
+        "PropertyNotify",
+        "SelectionClear",
+        "SelectionRequest",
+        "SelectionNotify",
+        "ColormapNotify",
+        "ClientMessage",
+        "MappingNotify",
+        "GeneralEvent",
+    };
+    return X_EVENT_TYPE_NAMES[event_code];
+}
+
 string XRequestCodeToString(unsigned char request_code) {
     static const char* const X_REQUEST_CODE_NAMES[] = {
         "",

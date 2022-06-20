@@ -64,7 +64,7 @@ void WindowManager::Run() {
     while (true) {
         XEvent e;
         XNextEvent(m_display, &e);
-        LOG(INFO) << "Received event: " << e.type;
+        LOG(INFO) << "Received event: " << XEventCodeToString(e.type);
 
         switch (e.type) {
             case CreateNotify:
