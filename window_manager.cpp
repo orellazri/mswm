@@ -136,6 +136,28 @@ int WindowManager::OnXError(Display* display, XErrorEvent* e) {
     return 0;
 }
 
+void WindowManager::SetWindowBorder(const Window& w, unsigned int width, const char* color_str) {
+    XSetWindowBorderWidth(m_display, w, width);
+
+    Colormap colormap = DefaultColormap(m_display, DefaultScreen(m_display));
+    XColor color;
+    CHECK(XAllocNamedColor(m_display, colormap, color_str, &color, &color));
+    XSetWindowBorder(m_display, w, color.pixel);
+}
+
+void WindowManager::FocusWindow(const Window& w) {
+    // Raise and change border on current window
+    SetWindowBorder(w, BORDER_WIDTH_ACTIVE, BORDER_COLOR_ACTIVE);
+    XRaiseWindow(m_display, w);
+
+    // Change border of all other windows to inactive
+    for (auto& window : m_windows) {
+        if (window == w)
+            continue;
+        SetWindowBorder(window, BORDER_WIDTH_INACTIVE, BORDER_COLOR_INACTIVE);
+    }
+}
+
 void WindowManager::OnCreateNotify(const XCreateWindowEvent& e) {}
 
 void WindowManager::OnDestroyNotify(const XDestroyWindowEvent& e) {}
@@ -157,11 +179,10 @@ void WindowManager::OnConfigureRequest(const XConfigureRequestEvent& e) {
 void WindowManager::OnConfigureNotify(const XConfigureEvent& e) {}
 
 void WindowManager::OnMapRequest(const XMapRequestEvent& e) {
-    XMapWindow(m_display, e.window);
-    SetWindowBorder(e.window, BORDER_WIDTH_ACTIVE, BORDER_COLOR_ACTIVE);
-    XRaiseWindow(m_display, e.window);
-
     m_windows.push_back(e.window);
+
+    XMapWindow(m_display, e.window);
+    FocusWindow(e.window);
 
     LOG(INFO) << "Mapped window " << e.window;
 }
@@ -199,15 +220,7 @@ void WindowManager::OnButtonPress(const XButtonEvent& e) {
     m_drag_start_frame_size = {width, height};
 
     // Raise window and change border to active
-    XRaiseWindow(m_display, e.subwindow);
-    SetWindowBorder(e.subwindow, BORDER_WIDTH_ACTIVE, BORDER_COLOR_ACTIVE);
-
-    // Change border of all other windows to inactive
-    for (auto& window : m_windows) {
-        if (window == e.subwindow)
-            continue;
-        SetWindowBorder(window, BORDER_WIDTH_INACTIVE, BORDER_COLOR_INACTIVE);
-    }
+    FocusWindow(e.subwindow);
 
     // Alt
     if (e.state & Mod1Mask) {
@@ -271,12 +284,3 @@ void WindowManager::OnMotionNotify(const XMotionEvent& e) {
 void WindowManager::OnKeyPress(const XKeyEvent& e) {}
 
 void WindowManager::OnKeyRelease(const XKeyEvent& e) {}
-
-void WindowManager::SetWindowBorder(const Window& w, unsigned int width, const char* color_str) {
-    XSetWindowBorderWidth(m_display, w, width);
-
-    Colormap colormap = DefaultColormap(m_display, DefaultScreen(m_display));
-    XColor color;
-    CHECK(XAllocNamedColor(m_display, colormap, color_str, &color, &color));
-    XSetWindowBorder(m_display, w, color.pixel);
-}

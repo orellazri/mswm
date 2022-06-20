@@ -16,9 +16,10 @@ class WindowManager {
     WindowManager(Display* display);
 
     void SetWindowBorder(const Window& w, unsigned int width, const char* color_str);
+    void FocusWindow(const Window& w);
 
-    static int OnXError(Display* display, XErrorEvent* e);
     static int OnWMDetected(Display* display, XErrorEvent* e);
+    static int OnXError(Display* display, XErrorEvent* e);
 
     void OnCreateNotify(const XCreateWindowEvent& e);
     void OnDestroyNotify(const XDestroyWindowEvent& e);
