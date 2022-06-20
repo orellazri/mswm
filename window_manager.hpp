@@ -16,8 +16,6 @@ class WindowManager {
    private:
     WindowManager(Display* display);
 
-    void Frame(Window w, bool was_created_before_window_manager);
-    void Unframe(Window w);
     void SetWindowBorder(const Window& w, unsigned int width, const char* color_str);
 
     static int OnXError(Display* display, XErrorEvent* e);
@@ -41,8 +39,6 @@ class WindowManager {
     Display* m_display;
     const Window m_root;
     static bool m_wm_detected;
-
-    std::unordered_map<Window, Window> m_clients;  // Maps top-level windows to their frame windows
 
     std::pair<int, int> m_drag_start_pos;
     std::pair<int, int> m_drag_start_frame_pos;
