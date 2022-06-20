@@ -191,7 +191,8 @@ void WindowManager::OnMapNotify(const XMapEvent& e) {}
 
 void WindowManager::OnUnmapNotify(const XUnmapEvent& e) {
     auto it = find(m_windows.begin(), m_windows.end(), e.window);
-    m_windows.erase(it);
+    if (it != m_windows.end())
+        m_windows.erase(it);
 }
 
 void WindowManager::OnButtonPress(const XButtonEvent& e) {
