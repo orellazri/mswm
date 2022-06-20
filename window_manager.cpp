@@ -168,7 +168,10 @@ void WindowManager::OnMapRequest(const XMapRequestEvent& e) {
 
 void WindowManager::OnMapNotify(const XMapEvent& e) {}
 
-void WindowManager::OnUnmapNotify(const XUnmapEvent& e) {}
+void WindowManager::OnUnmapNotify(const XUnmapEvent& e) {
+    auto it = find(m_windows.begin(), m_windows.end(), e.window);
+    m_windows.erase(it);
+}
 
 void WindowManager::OnButtonPress(const XButtonEvent& e) {
     if (e.subwindow == None)
