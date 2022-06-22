@@ -39,6 +39,5 @@ Clone the repository and run `./run.sh` (set to executable if needed). This will
 
 **NOTE**: If running on Xephyr, disable num lock to avoid bugs.
 
-
 ### Build
 Run `make`
