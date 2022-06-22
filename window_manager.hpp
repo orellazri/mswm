@@ -4,7 +4,6 @@
 #pragma once
 
 #include <memory>
-#include <unordered_map>
 #include <vector>
 
 class WindowManager {
@@ -16,12 +15,11 @@ class WindowManager {
    private:
     WindowManager(Display* display);
 
-    void Frame(Window w, bool was_created_before_window_manager);
-    void Unframe(Window w);
     void SetWindowBorder(const Window& w, unsigned int width, const char* color_str);
+    void FocusWindow(const Window& w);
 
-    static int OnXError(Display* display, XErrorEvent* e);
     static int OnWMDetected(Display* display, XErrorEvent* e);
+    static int OnXError(Display* display, XErrorEvent* e);
 
     void OnCreateNotify(const XCreateWindowEvent& e);
     void OnDestroyNotify(const XDestroyWindowEvent& e);
@@ -41,8 +39,7 @@ class WindowManager {
     Display* m_display;
     const Window m_root;
     static bool m_wm_detected;
-
-    std::unordered_map<Window, Window> m_clients;  // Maps top-level windows to their frame windows
+    std::vector<Window> m_windows;
 
     std::pair<int, int> m_drag_start_pos;
     std::pair<int, int> m_drag_start_frame_pos;
