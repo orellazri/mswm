@@ -23,7 +23,6 @@
 - [google-glog](https://github.com/google/glog) library
 - [Xephyr](https://www.freedesktop.org/wiki/Software/Xephyr/)
 - xinit and X utilites
-- [feh](https://feh.finalrewind.org/)
 
 ### Installation and Running
 
