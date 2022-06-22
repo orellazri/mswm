@@ -1,4 +1,4 @@
-# mswm
+# 🪟 mswm
 
 [Stacking](https://en.wikipedia.org/wiki/Stacking_window_manager) X11 Window Manager written in C++
 
