@@ -6,12 +6,13 @@
 
 ## Usage
 
-| Trigger            | Action        |
-| ------------------ | ------------- |
-| Left Click         | Focus window  |
-| Alt + Left Click   | Move window   |
-| Alt + Right Click  | Resize window |
-| Alt + Middle Click | Close window  |
+| Trigger            | Action               |
+| ------------------ | -------------------- |
+| Left Click         | Focus window         |
+| Alt + Left Click   | Move window          |
+| Alt + Right Click  | Resize window        |
+| Alt + Middle Click | Close window         |
+| Alt + Tab          | Switch active window |
 
 ## Instructions
 

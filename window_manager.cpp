@@ -52,6 +52,17 @@ void WindowManager::Run() {
                 None,
                 None);
 
+    // Alt + Tab
+    XGrabKey(m_display,
+             XKeysymToKeycode(m_display, XK_Tab),
+             Mod1Mask,
+             m_root,
+             False,
+             GrabModeAsync,
+             GrabModeAsync);
+
+    XSelectInput(m_display, m_root, SubstructureNotifyMask | SubstructureRedirectMask);
+
     XSync(m_display, false);
     if (m_wm_detected) {
         LOG(ERROR) << "Detected another window manager on display " << XDisplayString(m_display);
@@ -67,7 +78,7 @@ void WindowManager::Run() {
     XEvent e;
     while (true) {
         XNextEvent(m_display, &e);
-        LOG(INFO) << "Received event: " << XEventCodeToString(e.type);
+        // LOG(INFO) << "Received event: " << XEventCodeToString(e.type);
 
         switch (e.type) {
             case CreateNotify:
@@ -148,6 +159,8 @@ void WindowManager::FocusWindow(const Window& w) {
     SetWindowBorder(w, BORDER_WIDTH_ACTIVE, BORDER_COLOR_ACTIVE);
     XRaiseWindow(m_display, w);
 
+    m_active_window = w;
+
     // Change border of all other windows to inactive
     for (auto& window : m_windows) {
         if (window == w)
@@ -189,9 +202,9 @@ void WindowManager::OnMapRequest(const XMapRequestEvent& e) {
 void WindowManager::OnMapNotify(const XMapEvent& e) {}
 
 void WindowManager::OnUnmapNotify(const XUnmapEvent& e) {
-    auto it = find(m_windows.begin(), m_windows.end(), e.window);
-    if (it != m_windows.end())
-        m_windows.erase(it);
+    // auto it = find(m_windows.begin(), m_windows.end(), e.window);
+    // if (it != m_windows.end())
+    //     m_windows.erase(it);
 }
 
 void WindowManager::OnButtonPress(const XButtonEvent& e) {
@@ -284,6 +297,19 @@ void WindowManager::OnMotionNotify(const XMotionEvent& e) {
     }
 }
 
-void WindowManager::OnKeyPress(const XKeyEvent& e) {}
+void WindowManager::OnKeyPress(const XKeyEvent& e) {
+    // Alt
+    if (e.state & Mod1Mask) {
+        // Tab to switch active window to next one
+        if (e.keycode == XKeysymToKeycode(m_display, XK_Tab)) {
+            auto it = find(m_windows.begin(), m_windows.end(), m_active_window);
+            CHECK(it != m_windows.end());
+            it++;
+            if (it == m_windows.end())
+                it = m_windows.begin();
+            FocusWindow(*it);
+        }
+    }
+}
 
 void WindowManager::OnKeyRelease(const XKeyEvent& e) {}

@@ -40,6 +40,7 @@ class WindowManager {
     const Window m_root;
     static bool m_wm_detected;
     std::vector<Window> m_windows;
+    Window m_active_window;
 
     std::pair<int, int> m_drag_start_pos;
     std::pair<int, int> m_drag_start_frame_pos;
