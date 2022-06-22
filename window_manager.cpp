@@ -39,35 +39,39 @@ void WindowManager::Run() {
     // Initialization
     m_wm_detected = false;
     XSetErrorHandler(&WindowManager::OnWMDetected);
-    XGrabButton(m_display,
-                AnyButton,
-                AnyModifier,
-                m_root,
-                true,
-                ButtonPressMask | ButtonReleaseMask | PointerMotionMask | OwnerGrabButtonMask,
-                GrabModeAsync,
-                GrabModeAsync,
-                None,
-                None);
+    // XGrabButton(m_display,
+    //             Button1,
+    //             Mod1Mask,
+    //             m_root,
+    //             True,
+    //             ButtonPressMask | ButtonReleaseMask | PointerMotionMask | OwnerGrabButtonMask,
+    //             GrabModeAsync,
+    //             GrabModeAsync,
+    //             None,
+    //             None);
+
+    // XSelectInput(m_display,
+    //              m_root,
+    //              FocusChangeMask | PropertyChangeMask | SubstructureNotifyMask | SubstructureRedirectMask | KeyPressMask | ButtonPressMask);
+
     XSelectInput(m_display,
                  m_root,
-                 FocusChangeMask | PropertyChangeMask |
-                     SubstructureNotifyMask | SubstructureRedirectMask |
-                     KeyPressMask | ButtonPressMask);
+                 SubstructureNotifyMask | SubstructureRedirectMask | ButtonPressMask | ButtonMotionMask);
 
     XSync(m_display, false);
     if (m_wm_detected) {
         LOG(ERROR) << "Detected another window manager on display " << XDisplayString(m_display);
         return;
     }
+
     XSetErrorHandler(&WindowManager::OnXError);
 
     // Show mouse cursor
     XDefineCursor(m_display, m_root, XCreateFontCursor(m_display, XC_top_left_arrow));
 
     // Main event loop
+    XEvent e;
     while (true) {
-        XEvent e;
         XNextEvent(m_display, &e);
         LOG(INFO) << "Received event: " << XEventCodeToString(e.type);
 
@@ -115,7 +119,7 @@ void WindowManager::Run() {
                 OnKeyRelease(e.xkey);
                 break;
             default:
-                LOG(WARNING) << "Ignored event: " << e.type;
+                LOG(WARNING) << "Ignored event: " << XEventCodeToString(e.type);
         }
     }
 }
@@ -150,6 +154,20 @@ void WindowManager::FocusWindow(const Window& w) {
     SetWindowBorder(w, BORDER_WIDTH_ACTIVE, BORDER_COLOR_ACTIVE);
     XRaiseWindow(m_display, w);
 
+    // XGrabButton(
+    //     m_display,
+    //     AnyButton,
+    //     AnyModifier,
+    //     w,
+    //     false,
+    //     OwnerGrabButtonMask | ButtonPressMask,
+    //     GrabModeSync,
+    //     GrabModeSync,
+    //     None,
+    //     None);
+
+    // XSelectInput(m_display, w, KeyPressMask | ButtonPressMask | OwnerGrabButtonMask);
+
     // Change border of all other windows to inactive
     for (auto& window : m_windows) {
         if (window == w)
@@ -182,6 +200,7 @@ void WindowManager::OnMapRequest(const XMapRequestEvent& e) {
     m_windows.push_back(e.window);
 
     XMapWindow(m_display, e.window);
+    XReparentWindow(m_display, e.window, m_root, 0, 0);
     FocusWindow(e.window);
 
     LOG(INFO) << "Mapped window " << e.window;
