@@ -39,24 +39,18 @@ void WindowManager::Run() {
     // Initialization
     m_wm_detected = false;
     XSetErrorHandler(&WindowManager::OnWMDetected);
-    // XGrabButton(m_display,
-    //             Button1,
-    //             Mod1Mask,
-    //             m_root,
-    //             True,
-    //             ButtonPressMask | ButtonReleaseMask | PointerMotionMask | OwnerGrabButtonMask,
-    //             GrabModeAsync,
-    //             GrabModeAsync,
-    //             None,
-    //             None);
 
-    // XSelectInput(m_display,
-    //              m_root,
-    //              FocusChangeMask | PropertyChangeMask | SubstructureNotifyMask | SubstructureRedirectMask | KeyPressMask | ButtonPressMask);
-
-    XSelectInput(m_display,
-                 m_root,
-                 SubstructureNotifyMask | SubstructureRedirectMask | ButtonPressMask | ButtonMotionMask);
+    // Alt + mouse handler
+    XGrabButton(m_display,
+                AnyButton,
+                Mod1Mask,
+                m_root,
+                True,
+                ButtonPressMask | ButtonReleaseMask | PointerMotionMask | OwnerGrabButtonMask,
+                GrabModeAsync,
+                GrabModeAsync,
+                None,
+                None);
 
     XSync(m_display, false);
     if (m_wm_detected) {
@@ -153,20 +147,6 @@ void WindowManager::FocusWindow(const Window& w) {
     // Raise and change border on current window
     SetWindowBorder(w, BORDER_WIDTH_ACTIVE, BORDER_COLOR_ACTIVE);
     XRaiseWindow(m_display, w);
-
-    // XGrabButton(
-    //     m_display,
-    //     AnyButton,
-    //     AnyModifier,
-    //     w,
-    //     false,
-    //     OwnerGrabButtonMask | ButtonPressMask,
-    //     GrabModeSync,
-    //     GrabModeSync,
-    //     None,
-    //     None);
-
-    // XSelectInput(m_display, w, KeyPressMask | ButtonPressMask | OwnerGrabButtonMask);
 
     // Change border of all other windows to inactive
     for (auto& window : m_windows) {
