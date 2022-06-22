@@ -276,10 +276,8 @@ void WindowManager::OnMotionNotify(const XMotionEvent& e) {
                                               m_drag_start_frame_size.second + size_delta.second};
 
             // Restrict minimum window size
-            LOG(INFO) << dest_frame_size.first << " x " << dest_frame_size.second;
             dest_frame_size.first = max(dest_frame_size.first, MIN_WINDOW_WIDTH);
             dest_frame_size.second = max(dest_frame_size.second, MIN_WINDOW_HEIGHT);
-            LOG(INFO) << dest_frame_size.first << " x " << dest_frame_size.second;
 
             // Resize window
             XResizeWindow(m_display, e.subwindow, dest_frame_size.first, dest_frame_size.second);
