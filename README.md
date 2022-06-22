@@ -22,8 +22,8 @@
 - [GNU Make](https://www.gnu.org/software/make/)
 - Xlib headers and libraries
 - [google-glog](https://github.com/google/glog) library
-- [Xephyr](https://www.freedesktop.org/wiki/Software/Xephyr/)
 - xinit and X utilites
+- [Xephyr](https://www.freedesktop.org/wiki/Software/Xephyr/) for running locally
 
 ### Installation and Running
 
@@ -38,3 +38,7 @@ sudo apt install \
 Clone the repository and run `./run.sh` (set to executable if needed).
 
 **NOTE**: If running on Xephyr, disable num lock to avoid bugs.
+
+
+### Build
+Run `make`
