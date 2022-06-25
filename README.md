@@ -6,13 +6,14 @@
 
 ## Usage
 
-| Trigger            | Action               |
-| ------------------ | -------------------- |
-| Left Click         | Focus window         |
-| Alt + Left Click   | Move window          |
-| Alt + Right Click  | Resize window        |
-| Alt + Middle Click | Close window         |
-| Alt + Tab          | Switch active window |
+| Trigger             | Action               |
+| ------------------- | -------------------- |
+| Left Click          | Focus window         |
+| Alt + Left Click    | Move window          |
+| Alt + Right Click   | Resize window        |
+| Alt + Middle Click  | Close window         |
+| Alt + Tab           | Switch active window |
+| Alt + Shift + Enter | Open terminal        |
 
 ## Instructions
 
@@ -40,4 +41,5 @@ Clone the repository and run `./run.sh` (set to executable if needed). This will
 **NOTE**: If running on Xephyr, disable num lock to avoid bugs.
 
 ### Build
+
 Run `make`

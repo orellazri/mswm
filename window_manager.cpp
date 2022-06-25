@@ -41,7 +41,7 @@ void WindowManager::Run() {
     wm_detected_ = false;
     XSetErrorHandler(&WindowManager::OnWMDetected);
 
-    // Alt + mouse handler
+    // Alt + Mouse buttons
     XGrabButton(display_,
                 AnyButton,
                 Mod1Mask,
@@ -53,10 +53,19 @@ void WindowManager::Run() {
                 None,
                 None);
 
-    // Alt + Tab
+    // Alt + Tab to switch active window
     XGrabKey(display_,
              XKeysymToKeycode(display_, XK_Tab),
              Mod1Mask,
+             root_,
+             False,
+             GrabModeAsync,
+             GrabModeAsync);
+
+    // Alt + (Shift) + Enter for Terminal
+    XGrabKey(display_,
+             XKeysymToKeycode(display_, XK_Return),
+             Mod1Mask | ShiftMask,
              root_,
              False,
              GrabModeAsync,
@@ -175,8 +184,9 @@ void WindowManager::FocusWindow(const Window& w) {
 
     // Change border of all other windows to inactive
     for (auto& window : windows_) {
-        if (window == w)
+        if (window == w) {
             continue;
+        }
         SetWindowBorder(window, BORDER_WIDTH_INACTIVE, BORDER_COLOR_INACTIVE);
     }
 
@@ -198,7 +208,13 @@ void WindowManager::WriteToStatusBar(const string message) {
 
 void WindowManager::OnCreateNotify(const XCreateWindowEvent& e) {}
 
-void WindowManager::OnDestroyNotify(const XDestroyWindowEvent& e) {}
+void WindowManager::OnDestroyNotify(const XDestroyWindowEvent& e) {
+    // Remove window from windows vector and switch active window
+    auto it = find(windows_.begin(), windows_.end(), e.window);
+    if (it != windows_.end()) {
+        windows_.erase(it);
+    }
+}
 
 void WindowManager::OnReparentNotify(const XReparentEvent& e) {}
 
@@ -229,11 +245,7 @@ void WindowManager::OnMapRequest(const XMapRequestEvent& e) {
 
 void WindowManager::OnMapNotify(const XMapEvent& e) {}
 
-void WindowManager::OnUnmapNotify(const XUnmapEvent& e) {
-    // auto it = find(windows_.begin(), windows_.end(), e.window);
-    // if (it != windows_.end())
-    //     windows_.erase(it);
-}
+void WindowManager::OnUnmapNotify(const XUnmapEvent& e) {}
 
 void WindowManager::OnButtonPress(const XButtonEvent& e) {
     if (e.subwindow == None)
@@ -335,12 +347,32 @@ void WindowManager::OnKeyPress(const XKeyEvent& e) {
     if (e.state & Mod1Mask) {
         // Tab to switch active window to next one
         if (e.keycode == XKeysymToKeycode(display_, XK_Tab)) {
+            // Don't switch if there are no windows
+            if (windows_.size() == 0)
+                return;
+
             auto it = find(windows_.begin(), windows_.end(), active_window_);
-            CHECK(it != windows_.end());
-            it++;
-            if (it == windows_.end())
+            if (it == windows_.end()) {
                 it = windows_.begin();
+            } else {
+                it++;
+                if (it == windows_.end())
+                    it = windows_.begin();
+            }
+
             FocusWindow(*it);
+        }
+
+        // Shift
+        if (e.state & ShiftMask) {
+            // Enter to open terminal
+            if (e.keycode == XKeysymToKeycode(display_, XK_Return)) {
+                if (fork() == 0) {
+                    char* argument_list[] = {"xterm", NULL};
+                    execvp("xterm", argument_list);
+                    exit(EXIT_SUCCESS);
+                }
+            }
         }
     }
 }
