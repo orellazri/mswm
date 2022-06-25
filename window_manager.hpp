@@ -17,6 +17,7 @@ class WindowManager {
 
     void SetWindowBorder(const Window& w, unsigned int width, const char* color_str);
     void FocusWindow(const Window& w);
+    void WriteToStatusBar(const std::string message);
 
     static int OnWMDetected(Display* display, XErrorEvent* e);
     static int OnXError(Display* display, XErrorEvent* e);
@@ -36,15 +37,16 @@ class WindowManager {
     void OnKeyRelease(const XKeyEvent& e);
 
    private:
-    Display* m_display;
-    const Window m_root;
-    static bool m_wm_detected;
-    std::vector<Window> m_windows;
-    Window m_active_window;
+    Display* display_;
+    const Window root_;
+    static bool wm_detected_;
+    std::vector<Window> windows_;
+    Window active_window_;
+    Window status_bar_window_;
 
-    std::pair<int, int> m_drag_start_pos;
-    std::pair<int, int> m_drag_start_frame_pos;
-    std::pair<int, int> m_drag_start_frame_size;
+    std::pair<int, int> drag_start_pos_;
+    std::pair<int, int> drag_start_frame_pos_;
+    std::pair<int, int> drag_start_frame_size_;
 
     const Atom WM_PROTOCOLS;
     const Atom WM_DELETE_WINDOW;

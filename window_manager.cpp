@@ -12,9 +12,10 @@
 using std::find;
 using std::max;
 using std::pair;
+using std::string;
 using std::unique_ptr;
 
-bool WindowManager::m_wm_detected;
+bool WindowManager::wm_detected_;
 
 unique_ptr<WindowManager> WindowManager::Create() {
     Display* display = XOpenDisplay(nullptr);
@@ -25,26 +26,26 @@ unique_ptr<WindowManager> WindowManager::Create() {
     return unique_ptr<WindowManager>(new WindowManager(display));
 }
 
-WindowManager::WindowManager(Display* display) : m_display(CHECK_NOTNULL(display)),
-                                                 m_root(DefaultRootWindow(m_display)),
-                                                 WM_PROTOCOLS(XInternAtom(m_display, "WM_PROTOCOLS", false)),
-                                                 WM_DELETE_WINDOW(XInternAtom(m_display, "WM_DELETE_WINDOW", false)) {
+WindowManager::WindowManager(Display* display) : display_(CHECK_NOTNULL(display)),
+                                                 root_(DefaultRootWindow(display_)),
+                                                 WM_PROTOCOLS(XInternAtom(display_, "WM_PROTOCOLS", false)),
+                                                 WM_DELETE_WINDOW(XInternAtom(display_, "WM_DELETE_WINDOW", false)) {
 }
 
 WindowManager::~WindowManager() {
-    XCloseDisplay(m_display);
+    XCloseDisplay(display_);
 }
 
 void WindowManager::Run() {
     // Initialization
-    m_wm_detected = false;
+    wm_detected_ = false;
     XSetErrorHandler(&WindowManager::OnWMDetected);
 
     // Alt + mouse handler
-    XGrabButton(m_display,
+    XGrabButton(display_,
                 AnyButton,
                 Mod1Mask,
-                m_root,
+                root_,
                 True,
                 ButtonPressMask | ButtonReleaseMask | PointerMotionMask | OwnerGrabButtonMask,
                 GrabModeAsync,
@@ -53,31 +54,42 @@ void WindowManager::Run() {
                 None);
 
     // Alt + Tab
-    XGrabKey(m_display,
-             XKeysymToKeycode(m_display, XK_Tab),
+    XGrabKey(display_,
+             XKeysymToKeycode(display_, XK_Tab),
              Mod1Mask,
-             m_root,
+             root_,
              False,
              GrabModeAsync,
              GrabModeAsync);
 
-    XSelectInput(m_display, m_root, SubstructureNotifyMask | SubstructureRedirectMask);
+    XSelectInput(display_, root_, SubstructureNotifyMask | SubstructureRedirectMask);
 
-    XSync(m_display, false);
-    if (m_wm_detected) {
-        LOG(ERROR) << "Detected another window manager on display " << XDisplayString(m_display);
+    XSync(display_, false);
+    if (wm_detected_) {
+        LOG(ERROR) << "Detected another window manager on display " << XDisplayString(display_);
         return;
     }
 
     XSetErrorHandler(&WindowManager::OnXError);
 
     // Show mouse cursor
-    XDefineCursor(m_display, m_root, XCreateFontCursor(m_display, XC_top_left_arrow));
+    XDefineCursor(display_, root_, XCreateFontCursor(display_, XC_top_left_arrow));
+
+    // Create status bar window
+    status_bar_window_ = XCreateSimpleWindow(
+        display_,
+        root_,
+        0, 0,
+        DisplayWidth(display_, DefaultScreen(display_)), STATUS_BAR_HEIGHT,
+        STATUS_BAR_BORDER_WIDTH,
+        STATUS_BAR_BORDER_COLOR,
+        STATUS_BAR_BG_COLOR);
+    XMapWindow(display_, status_bar_window_);
 
     // Main event loop
     XEvent e;
     while (true) {
-        XNextEvent(m_display, &e);
+        XNextEvent(display_, &e);
         // LOG(INFO) << "Received event: " << XEventCodeToString(e.type);
 
         switch (e.type) {
@@ -113,7 +125,7 @@ void WindowManager::Run() {
                 break;
             case MotionNotify:
                 // Skip any pending motion events
-                while (XCheckTypedWindowEvent(m_display, e.xmotion.subwindow, MotionNotify, &e)) {
+                while (XCheckTypedWindowEvent(display_, e.xmotion.subwindow, MotionNotify, &e)) {
                 }
                 OnMotionNotify(e.xmotion);
                 break;
@@ -131,7 +143,7 @@ void WindowManager::Run() {
 
 int WindowManager::OnWMDetected(Display* display, XErrorEvent* e) {
     CHECK_EQ(static_cast<int>(e->error_code), BadAccess);
-    m_wm_detected = true;
+    wm_detected_ = true;
     return 0;
 }
 
@@ -146,27 +158,42 @@ int WindowManager::OnXError(Display* display, XErrorEvent* e) {
 }
 
 void WindowManager::SetWindowBorder(const Window& w, unsigned int width, const char* color_str) {
-    XSetWindowBorderWidth(m_display, w, width);
+    XSetWindowBorderWidth(display_, w, width);
 
-    Colormap colormap = DefaultColormap(m_display, DefaultScreen(m_display));
+    Colormap colormap = DefaultColormap(display_, DefaultScreen(display_));
     XColor color;
-    CHECK(XAllocNamedColor(m_display, colormap, color_str, &color, &color));
-    XSetWindowBorder(m_display, w, color.pixel);
+    CHECK(XAllocNamedColor(display_, colormap, color_str, &color, &color));
+    XSetWindowBorder(display_, w, color.pixel);
 }
 
 void WindowManager::FocusWindow(const Window& w) {
     // Raise and change border on current window
     SetWindowBorder(w, BORDER_WIDTH_ACTIVE, BORDER_COLOR_ACTIVE);
-    XRaiseWindow(m_display, w);
+    XRaiseWindow(display_, w);
 
-    m_active_window = w;
+    active_window_ = w;
 
     // Change border of all other windows to inactive
-    for (auto& window : m_windows) {
+    for (auto& window : windows_) {
         if (window == w)
             continue;
         SetWindowBorder(window, BORDER_WIDTH_INACTIVE, BORDER_COLOR_INACTIVE);
     }
+
+    // Write window title to status bar
+    XTextProperty xtext;
+    XGetWMName(display_, w, &xtext);
+    WriteToStatusBar(string(reinterpret_cast<char*>(xtext.value)));
+}
+
+void WindowManager::WriteToStatusBar(const string message) {
+    XClearWindow(display_, status_bar_window_);
+    XDrawString(display_,
+                status_bar_window_,
+                DefaultGC(display_, DefaultScreen(display_)),
+                16, 16,
+                message.c_str(),
+                message.length());
 }
 
 void WindowManager::OnCreateNotify(const XCreateWindowEvent& e) {}
@@ -184,16 +211,17 @@ void WindowManager::OnConfigureRequest(const XConfigureRequestEvent& e) {
     wc.border_width = e.border_width;
     wc.sibling = e.above;
     wc.stack_mode = e.detail;
-    XConfigureWindow(m_display, e.window, e.value_mask, &wc);
+    XConfigureWindow(display_, e.window, e.value_mask, &wc);
 }
 
 void WindowManager::OnConfigureNotify(const XConfigureEvent& e) {}
 
 void WindowManager::OnMapRequest(const XMapRequestEvent& e) {
-    m_windows.push_back(e.window);
+    windows_.push_back(e.window);
 
-    XMapWindow(m_display, e.window);
-    XReparentWindow(m_display, e.window, m_root, 0, 0);
+    XMapWindow(display_, e.window);
+    XReparentWindow(display_, e.window, root_, 0, 0);
+    XMoveWindow(display_, e.window, 0, STATUS_BAR_HEIGHT);
     FocusWindow(e.window);
 
     LOG(INFO) << "Mapped window " << e.window;
@@ -202,9 +230,9 @@ void WindowManager::OnMapRequest(const XMapRequestEvent& e) {
 void WindowManager::OnMapNotify(const XMapEvent& e) {}
 
 void WindowManager::OnUnmapNotify(const XUnmapEvent& e) {
-    // auto it = find(m_windows.begin(), m_windows.end(), e.window);
-    // if (it != m_windows.end())
-    //     m_windows.erase(it);
+    // auto it = find(windows_.begin(), windows_.end(), e.window);
+    // if (it != windows_.end())
+    //     windows_.erase(it);
 }
 
 void WindowManager::OnButtonPress(const XButtonEvent& e) {
@@ -212,14 +240,14 @@ void WindowManager::OnButtonPress(const XButtonEvent& e) {
         return;
 
     // Save initial cursor position
-    m_drag_start_pos = {e.x_root, e.y_root};
+    drag_start_pos_ = {e.x_root, e.y_root};
 
     // Save initial window info
     Window returned_root;
     int x, y;
     unsigned width, height, border_width, depth;
     CHECK(XGetGeometry(
-        m_display,
+        display_,
         e.subwindow,
         &returned_root,
         &x,
@@ -229,8 +257,8 @@ void WindowManager::OnButtonPress(const XButtonEvent& e) {
         &border_width,
         &depth));
 
-    m_drag_start_frame_pos = {x, y};
-    m_drag_start_frame_size = {width, height};
+    drag_start_frame_pos_ = {x, y};
+    drag_start_frame_size_ = {width, height};
 
     // Raise window and change border to active
     FocusWindow(e.subwindow);
@@ -243,7 +271,7 @@ void WindowManager::OnButtonPress(const XButtonEvent& e) {
             // Otherwise, kill it.
             Atom* supported_protocols;
             int num_supported_protocols;
-            if (XGetWMProtocols(m_display, e.subwindow, &supported_protocols, &num_supported_protocols) &&
+            if (XGetWMProtocols(display_, e.subwindow, &supported_protocols, &num_supported_protocols) &&
                 find(supported_protocols, supported_protocols + num_supported_protocols, WM_DELETE_WINDOW) != supported_protocols + num_supported_protocols) {
                 LOG(INFO) << "Gracefully deleting window " << e.subwindow;
                 XEvent msg = {0};
@@ -252,10 +280,10 @@ void WindowManager::OnButtonPress(const XButtonEvent& e) {
                 msg.xclient.window = e.subwindow;
                 msg.xclient.format = 32;
                 msg.xclient.data.l[0] = WM_DELETE_WINDOW;
-                CHECK(XSendEvent(m_display, e.subwindow, false, 0, &msg));
+                CHECK(XSendEvent(display_, e.subwindow, false, 0, &msg));
             } else {
                 LOG(INFO) << "Killing window " << e.subwindow;
-                XKillClient(m_display, e.subwindow);
+                XKillClient(display_, e.subwindow);
             }
         }
     }
@@ -268,31 +296,36 @@ void WindowManager::OnMotionNotify(const XMotionEvent& e) {
         return;
 
     const pair<int, int> drag_pos = {e.x_root, e.y_root};
-    const pair<int, int> delta = {drag_pos.first - m_drag_start_pos.first,
-                                  drag_pos.second - m_drag_start_pos.second};
+    const pair<int, int> delta = {drag_pos.first - drag_start_pos_.first,
+                                  drag_pos.second - drag_start_pos_.second};
 
     // Alt
     if (e.state & Mod1Mask) {
         // Left button to move
         if (e.state & Button1Mask) {
-            const pair<int, int> dest_frame_pos = {m_drag_start_frame_pos.first + delta.first,
-                                                   m_drag_start_frame_pos.second + delta.second};
-            XMoveWindow(m_display, e.subwindow, dest_frame_pos.first, dest_frame_pos.second);
+            const pair<int, int> dest_frame_pos = {drag_start_frame_pos_.first + delta.first,
+                                                   drag_start_frame_pos_.second + delta.second};
+
+            // Don't move window above status bar
+            if (dest_frame_pos.second < STATUS_BAR_HEIGHT)
+                return;
+
+            XMoveWindow(display_, e.subwindow, dest_frame_pos.first, dest_frame_pos.second);
         }
 
         // Right button to reisze
         if (e.state & Button3Mask) {
-            const pair<int, int> size_delta = {max(delta.first, -m_drag_start_frame_size.first),
-                                               max(delta.second, -m_drag_start_frame_size.second)};
-            pair<int, int> dest_frame_size = {m_drag_start_frame_size.first + size_delta.first,
-                                              m_drag_start_frame_size.second + size_delta.second};
+            const pair<int, int> size_delta = {max(delta.first, -drag_start_frame_size_.first),
+                                               max(delta.second, -drag_start_frame_size_.second)};
+            pair<int, int> dest_frame_size = {drag_start_frame_size_.first + size_delta.first,
+                                              drag_start_frame_size_.second + size_delta.second};
 
             // Restrict minimum window size
             dest_frame_size.first = max(dest_frame_size.first, MIN_WINDOW_WIDTH);
             dest_frame_size.second = max(dest_frame_size.second, MIN_WINDOW_HEIGHT);
 
             // Resize window
-            XResizeWindow(m_display, e.subwindow, dest_frame_size.first, dest_frame_size.second);
+            XResizeWindow(display_, e.subwindow, dest_frame_size.first, dest_frame_size.second);
         }
     }
 }
@@ -301,12 +334,12 @@ void WindowManager::OnKeyPress(const XKeyEvent& e) {
     // Alt
     if (e.state & Mod1Mask) {
         // Tab to switch active window to next one
-        if (e.keycode == XKeysymToKeycode(m_display, XK_Tab)) {
-            auto it = find(m_windows.begin(), m_windows.end(), m_active_window);
-            CHECK(it != m_windows.end());
+        if (e.keycode == XKeysymToKeycode(display_, XK_Tab)) {
+            auto it = find(windows_.begin(), windows_.end(), active_window_);
+            CHECK(it != windows_.end());
             it++;
-            if (it == m_windows.end())
-                it = m_windows.begin();
+            if (it == windows_.end())
+                it = windows_.begin();
             FocusWindow(*it);
         }
     }
