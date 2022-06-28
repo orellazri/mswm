@@ -1,19 +1,21 @@
 # 🪟 mswm
 
-[Stacking](https://en.wikipedia.org/wiki/Stacking_window_manager) X11 Window Manager written in C++
+[Floating](https://en.wikipedia.org/wiki/Stacking_window_manager) X11 Window Manager with workspaces. Written in C++.
 
 ![Demo](assets/demo.png)
 
 ## Usage
 
-| Trigger             | Action               |
-| ------------------- | -------------------- |
-| Left Click          | Focus window         |
-| Alt + Left Click    | Move window          |
-| Alt + Right Click   | Resize window        |
-| Alt + Middle Click  | Close window         |
-| Alt + Tab           | Switch active window |
-| Alt + Shift + Enter | Open terminal        |
+| Trigger                  | Action                               |
+| ------------------------ | ------------------------------------ |
+| Left Click               | Focus window                         |
+| Alt + Left Click         | Move window                          |
+| Alt + Right Click        | Resize window                        |
+| Alt + Middle Click       | Close window                         |
+| Alt + Tab                | Switch active window                 |
+| Alt + Shift + Enter      | Open terminal                        |
+| Alt + Ctrl + Right Arrow | Switch to next workspace (or create) |
+| Alt + Ctrl + Left Arrow  | Switch to previous workspace         |
 
 ## Instructions
 

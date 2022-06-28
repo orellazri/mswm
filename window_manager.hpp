@@ -4,6 +4,7 @@
 #pragma once
 
 #include <memory>
+#include <unordered_map>
 #include <vector>
 
 class WindowManager {
@@ -18,6 +19,8 @@ class WindowManager {
     void SetWindowBorder(const Window& w, unsigned int width, const char* color_str);
     void FocusWindow(const Window& w);
     void WriteToStatusBar(const std::string message);
+    void SwitchWorkspace(const int workspace);
+    void CreateWorkspace();
 
     static int OnWMDetected(Display* display, XErrorEvent* e);
     static int OnXError(Display* display, XErrorEvent* e);
@@ -40,8 +43,11 @@ class WindowManager {
     Display* display_;
     const Window root_;
     static bool wm_detected_;
-    std::vector<Window> windows_;
+
+    int active_workspace_ = 0;
+    int num_workspaces_ = 1;
     Window active_window_;
+    std::unordered_map<Window, int> windows_;  // Map windows to workspaces
     Window status_bar_window_;
 
     std::pair<int, int> drag_start_pos_;

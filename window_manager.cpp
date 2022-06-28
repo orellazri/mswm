@@ -71,6 +71,24 @@ void WindowManager::Run() {
              GrabModeAsync,
              GrabModeAsync);
 
+    // Alt + Ctrl + Right for next workspace
+    XGrabKey(display_,
+             XKeysymToKeycode(display_, XK_Right),
+             Mod1Mask | ControlMask,
+             root_,
+             False,
+             GrabModeAsync,
+             GrabModeAsync);
+
+    // Alt + Ctrl + Left for previous workspace
+    XGrabKey(display_,
+             XKeysymToKeycode(display_, XK_Left),
+             Mod1Mask | ControlMask,
+             root_,
+             False,
+             GrabModeAsync,
+             GrabModeAsync);
+
     XSelectInput(display_, root_, SubstructureNotifyMask | SubstructureRedirectMask);
 
     XSync(display_, false);
@@ -184,10 +202,10 @@ void WindowManager::FocusWindow(const Window& w) {
 
     // Change border of all other windows to inactive
     for (auto& window : windows_) {
-        if (window == w) {
+        if (window.first == w) {
             continue;
         }
-        SetWindowBorder(window, BORDER_WIDTH_INACTIVE, BORDER_COLOR_INACTIVE);
+        SetWindowBorder(window.first, BORDER_WIDTH_INACTIVE, BORDER_COLOR_INACTIVE);
     }
 
     // Write window title to status bar
@@ -197,20 +215,51 @@ void WindowManager::FocusWindow(const Window& w) {
 }
 
 void WindowManager::WriteToStatusBar(const string message) {
+    // Write active workspace number and message
+    std::stringstream fmt;
+    fmt << "[" << active_workspace_ << "] " << message;
+
     XClearWindow(display_, status_bar_window_);
     XDrawString(display_,
                 status_bar_window_,
                 DefaultGC(display_, DefaultScreen(display_)),
                 16, 16,
-                message.c_str(),
-                message.length());
+                fmt.str().c_str(),
+                fmt.str().length());
+}
+
+void WindowManager::SwitchWorkspace(const int workspace) {
+    CHECK(workspace >= 0);
+    CHECK(workspace < num_workspaces_);
+
+    // Hide windows of current workspace
+    for (auto& window : windows_) {
+        if (window.second != active_workspace_)
+            continue;
+        XWithdrawWindow(display_, window.first, DefaultScreen(display_));
+    }
+
+    // Show windows of new workspace
+    for (auto& window : windows_) {
+        if (window.second != workspace)
+            continue;
+        XMapWindow(display_, window.first);
+    }
+
+    active_workspace_ = workspace;
+    WriteToStatusBar("");
+}
+
+void WindowManager::CreateWorkspace() {
+    num_workspaces_++;
+    SwitchWorkspace(num_workspaces_ - 1);
 }
 
 void WindowManager::OnCreateNotify(const XCreateWindowEvent& e) {}
 
 void WindowManager::OnDestroyNotify(const XDestroyWindowEvent& e) {
     // Remove window from windows vector and switch active window
-    auto it = find(windows_.begin(), windows_.end(), e.window);
+    auto it = windows_.find(e.window);
     if (it != windows_.end()) {
         windows_.erase(it);
     }
@@ -233,7 +282,7 @@ void WindowManager::OnConfigureRequest(const XConfigureRequestEvent& e) {
 void WindowManager::OnConfigureNotify(const XConfigureEvent& e) {}
 
 void WindowManager::OnMapRequest(const XMapRequestEvent& e) {
-    windows_.push_back(e.window);
+    windows_[e.window] = active_workspace_;
 
     XMapWindow(display_, e.window);
     XReparentWindow(display_, e.window, root_, 0, 0);
@@ -351,7 +400,7 @@ void WindowManager::OnKeyPress(const XKeyEvent& e) {
             if (windows_.size() == 0)
                 return;
 
-            auto it = find(windows_.begin(), windows_.end(), active_window_);
+            auto it = windows_.find(e.window);
             if (it == windows_.end()) {
                 it = windows_.begin();
             } else {
@@ -360,7 +409,7 @@ void WindowManager::OnKeyPress(const XKeyEvent& e) {
                     it = windows_.begin();
             }
 
-            FocusWindow(*it);
+            FocusWindow(it->first);
         }
 
         // Shift
@@ -372,6 +421,30 @@ void WindowManager::OnKeyPress(const XKeyEvent& e) {
                     execvp("xterm", argument_list);
                     exit(EXIT_SUCCESS);
                 }
+            }
+        }
+
+        // Ctrl
+        if (e.state & ControlMask) {
+            // Right
+            if (e.keycode == XKeysymToKeycode(display_, XK_Right)) {
+                // Switch to next workspace
+                if (active_workspace_ < num_workspaces_ - 1) {
+                    // TODO
+                    SwitchWorkspace(active_workspace_ + 1);
+                } else {
+                    // Create new workspace if on the last one
+                    CreateWorkspace();
+                }
+            }
+
+            // Left
+            if (e.keycode == XKeysymToKeycode(display_, XK_Left)) {
+                // Switch to previous workspace if we are not on the first one
+                if (active_workspace_ == 0)
+                    return;
+
+                SwitchWorkspace(active_workspace_ - 1);
             }
         }
     }
