@@ -89,6 +89,24 @@ void WindowManager::Run() {
              GrabModeAsync,
              GrabModeAsync);
 
+    // Alt + Shift + Ctrl + Right to move active window to next workpace
+    XGrabKey(display_,
+             XKeysymToKeycode(display_, XK_Right),
+             Mod1Mask | ControlMask | ShiftMask,
+             root_,
+             False,
+             GrabModeAsync,
+             GrabModeAsync);
+
+    // Alt + Shift + Ctrl + Left to move active window to previous workpace
+    XGrabKey(display_,
+             XKeysymToKeycode(display_, XK_Left),
+             Mod1Mask | ControlMask | ShiftMask,
+             root_,
+             False,
+             GrabModeAsync,
+             GrabModeAsync);
+
     XSelectInput(display_, root_, SubstructureNotifyMask | SubstructureRedirectMask);
 
     XSync(display_, false);
@@ -394,7 +412,7 @@ void WindowManager::OnMotionNotify(const XMotionEvent& e) {
 void WindowManager::OnKeyPress(const XKeyEvent& e) {
     // Alt
     if (e.state & Mod1Mask) {
-        // Tab to switch active window to next one
+        // Alt + Tab to switch active window to next one
         if (e.keycode == XKeysymToKeycode(display_, XK_Tab)) {
             // Don't switch if there are no windows
             if (windows_.size() == 0)
@@ -410,23 +428,68 @@ void WindowManager::OnKeyPress(const XKeyEvent& e) {
             }
 
             FocusWindow(it->first);
+            return;
         }
 
-        // Shift
+        // Alt + Shift
         if (e.state & ShiftMask) {
-            // Enter to open terminal
+            // Alt + Shift + Enter to open terminal
             if (e.keycode == XKeysymToKeycode(display_, XK_Return)) {
                 if (fork() == 0) {
                     char* argument_list[] = {"xterm", NULL};
                     execvp("xterm", argument_list);
                     exit(EXIT_SUCCESS);
                 }
+                return;
+            }
+
+            // Alt + Shift + Ctrl
+            if (e.state & ControlMask) {
+                // Alt + Shift + Ctrl + Right
+                if (e.keycode == XKeysymToKeycode(display_, XK_Right)) {
+                    if (active_window_ == 0)
+                        return;
+
+                    // Check if there is a next workspace
+                    if (active_workspace_ == num_workspaces_ - 1)
+                        return;
+
+                    // Hide window
+                    XWithdrawWindow(display_, active_window_, DefaultScreen(display_));
+
+                    // Move window to next workspace
+                    windows_[active_window_] = active_workspace_ + 1;
+                    active_window_ = 0;
+
+                    WriteToStatusBar("");
+                    return;
+                }
+
+                // Alt + Shift + Ctrl + Left
+                if (e.keycode == XKeysymToKeycode(display_, XK_Left)) {
+                    if (active_window_ == 0)
+                        return;
+
+                    // Check if there is a previous workspace
+                    if (active_workspace_ == 0)
+                        return;
+
+                    // Hide window
+                    XWithdrawWindow(display_, active_window_, DefaultScreen(display_));
+
+                    // Move window to next workspace
+                    windows_[active_window_] = active_workspace_ - 1;
+                    active_window_ = 0;
+
+                    WriteToStatusBar("");
+                    return;
+                }
             }
         }
 
-        // Ctrl
+        // Alt + Ctrl
         if (e.state & ControlMask) {
-            // Right
+            // Alt + Ctrl + Right
             if (e.keycode == XKeysymToKeycode(display_, XK_Right)) {
                 // Switch to next workspace
                 if (active_workspace_ < num_workspaces_ - 1) {
@@ -436,15 +499,17 @@ void WindowManager::OnKeyPress(const XKeyEvent& e) {
                     // Create new workspace if on the last one
                     CreateWorkspace();
                 }
+                return;
             }
 
-            // Left
+            // Alt + Ctrl + Left
             if (e.keycode == XKeysymToKeycode(display_, XK_Left)) {
                 // Switch to previous workspace if we are not on the first one
                 if (active_workspace_ == 0)
                     return;
 
                 SwitchWorkspace(active_workspace_ - 1);
+                return;
             }
         }
     }

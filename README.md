@@ -6,16 +6,18 @@
 
 ## Usage
 
-| Trigger                  | Action                               |
-| ------------------------ | ------------------------------------ |
-| Left Click               | Focus window                         |
-| Alt + Left Click         | Move window                          |
-| Alt + Right Click        | Resize window                        |
-| Alt + Middle Click       | Close window                         |
-| Alt + Tab                | Switch active window                 |
-| Alt + Shift + Enter      | Open terminal                        |
-| Alt + Ctrl + Right Arrow | Switch to next workspace (or create) |
-| Alt + Ctrl + Left Arrow  | Switch to previous workspace         |
+| Trigger                         | Action                                   |
+| ------------------------------- | ---------------------------------------- |
+| Left Click                      | Focus window                             |
+| Alt + Left Click                | Move window                              |
+| Alt + Right Click               | Resize window                            |
+| Alt + Middle Click              | Close window                             |
+| Alt + Tab                       | Switch active window                     |
+| Alt + Shift + Enter             | Open terminal                            |
+| Alt + Ctrl + Right Arrow        | Switch to next workspace (or create)     |
+| Alt + Ctrl + Left Arrow         | Switch to previous workspace             |
+| Alt + Shift + Ctrl + Left Arrow | Move active window to next workspace     |
+| Alt + Shift + Ctrl + Left Arrow | Move active window to previous workspace |
 
 ## Instructions
 

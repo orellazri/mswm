@@ -46,7 +46,7 @@ class WindowManager {
 
     int active_workspace_ = 0;
     int num_workspaces_ = 1;
-    Window active_window_;
+    Window active_window_ = 0;
     std::unordered_map<Window, int> windows_;  // Map windows to workspaces
     Window status_bar_window_;
 
