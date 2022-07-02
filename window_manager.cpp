@@ -414,11 +414,11 @@ void WindowManager::OnKeyPress(const XKeyEvent& e) {
     if (e.state & Mod1Mask) {
         // Alt + Tab to switch active window to next one
         if (e.keycode == XKeysymToKeycode(display_, XK_Tab)) {
-            // Don't switch if there are no windows
-            if (windows_.size() == 0)
+            // Don't switch if there are no windows or no active window
+            if (windows_.size() == 0 || active_window_ == 0)
                 return;
 
-            auto it = windows_.find(e.window);
+            auto it = windows_.find(active_window_);
             if (it == windows_.end()) {
                 it = windows_.begin();
             } else {
