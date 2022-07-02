@@ -47,7 +47,7 @@ class WindowManager {
     int active_workspace_ = 0;
     int num_workspaces_ = 1;
     Window active_window_ = 0;
-    std::unordered_map<Window, int> windows_;  // Map windows to workspaces
+    std::vector<std::vector<Window>> workspaces_;  // Vector of windows in every workspace
     Window status_bar_window_;
 
     std::pair<int, int> drag_start_pos_;

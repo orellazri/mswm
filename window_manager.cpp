@@ -14,6 +14,7 @@ using std::max;
 using std::pair;
 using std::string;
 using std::unique_ptr;
+using std::vector;
 
 bool WindowManager::wm_detected_;
 
@@ -131,6 +132,9 @@ void WindowManager::Run() {
         STATUS_BAR_BG_COLOR);
     XMapWindow(display_, status_bar_window_);
 
+    // Create first workspace
+    workspaces_.push_back(vector<Window>());
+
     // Main event loop
     XEvent e;
     while (true) {
@@ -219,11 +223,13 @@ void WindowManager::FocusWindow(const Window& w) {
     active_window_ = w;
 
     // Change border of all other windows to inactive
-    for (auto& window : windows_) {
-        if (window.first == w) {
-            continue;
+    for (auto& workspace : workspaces_) {
+        for (auto& window : workspace) {
+            if (window == w)
+                continue;
+
+            SetWindowBorder(window, BORDER_WIDTH_INACTIVE, BORDER_COLOR_INACTIVE);
         }
-        SetWindowBorder(window.first, BORDER_WIDTH_INACTIVE, BORDER_COLOR_INACTIVE);
     }
 
     // Write window title to status bar
@@ -250,18 +256,19 @@ void WindowManager::SwitchWorkspace(const int workspace) {
     CHECK(workspace >= 0);
     CHECK(workspace < num_workspaces_);
 
+    // Create new workspace if needed
+    if (workspace == workspaces_.size()) {
+        workspaces_.push_back(vector<Window>());
+    }
+
     // Hide windows of current workspace
-    for (auto& window : windows_) {
-        if (window.second != active_workspace_)
-            continue;
-        XWithdrawWindow(display_, window.first, DefaultScreen(display_));
+    for (auto& window : workspaces_[active_workspace_]) {
+        XWithdrawWindow(display_, window, DefaultScreen(display_));
     }
 
     // Show windows of new workspace
-    for (auto& window : windows_) {
-        if (window.second != workspace)
-            continue;
-        XMapWindow(display_, window.first);
+    for (auto& window : workspaces_[workspace]) {
+        XMapWindow(display_, window);
     }
 
     active_workspace_ = workspace;
@@ -277,9 +284,11 @@ void WindowManager::OnCreateNotify(const XCreateWindowEvent& e) {}
 
 void WindowManager::OnDestroyNotify(const XDestroyWindowEvent& e) {
     // Remove window from windows vector and switch active window
-    auto it = windows_.find(e.window);
-    if (it != windows_.end()) {
-        windows_.erase(it);
+    for (auto& workspace : workspaces_) {
+        auto it = find(workspace.begin(), workspace.end(), e.window);
+        if (it != workspace.end()) {
+            workspace.erase(it);
+        }
     }
 }
 
@@ -300,7 +309,7 @@ void WindowManager::OnConfigureRequest(const XConfigureRequestEvent& e) {
 void WindowManager::OnConfigureNotify(const XConfigureEvent& e) {}
 
 void WindowManager::OnMapRequest(const XMapRequestEvent& e) {
-    windows_[e.window] = active_workspace_;
+    workspaces_[active_workspace_].push_back(e.window);
 
     XMapWindow(display_, e.window);
     XReparentWindow(display_, e.window, root_, 0, 0);
@@ -415,19 +424,20 @@ void WindowManager::OnKeyPress(const XKeyEvent& e) {
         // Alt + Tab to switch active window to next one
         if (e.keycode == XKeysymToKeycode(display_, XK_Tab)) {
             // Don't switch if there are no windows or no active window
-            if (windows_.size() == 0 || active_window_ == 0)
+            if (workspaces_.size() == 0 || active_window_ == 0)
                 return;
 
-            Window window_to_focus = active_window_;
-            for (auto window : windows_) {
-                if (window.first != active_window_ && window.second == active_workspace_) {
-                    window_to_focus = window.first;
-                    break;
-                }
+            // Find next window in workspace
+            auto it = find(workspaces_[active_workspace_].begin(), workspaces_[active_workspace_].end(), active_window_);
+            if (it == workspaces_[active_workspace_].end()) {
+                it = workspaces_[active_workspace_].begin();
+            } else {
+                it++;
+                if (it == workspaces_[active_workspace_].end())
+                    it = workspaces_[active_workspace_].begin();
             }
 
-            FocusWindow(window_to_focus);
-
+            FocusWindow(*it);
             return;
         }
 
@@ -458,7 +468,8 @@ void WindowManager::OnKeyPress(const XKeyEvent& e) {
                     XWithdrawWindow(display_, active_window_, DefaultScreen(display_));
 
                     // Move window to next workspace
-                    windows_[active_window_] = active_workspace_ + 1;
+                    workspaces_[active_workspace_].erase(find(workspaces_[active_workspace_].begin(), workspaces_[active_workspace_].end(), active_window_));
+                    workspaces_[active_workspace_ + 1].push_back(active_window_);
                     active_window_ = 0;
 
                     WriteToStatusBar("");
@@ -477,8 +488,9 @@ void WindowManager::OnKeyPress(const XKeyEvent& e) {
                     // Hide window
                     XWithdrawWindow(display_, active_window_, DefaultScreen(display_));
 
-                    // Move window to next workspace
-                    windows_[active_window_] = active_workspace_ - 1;
+                    // Move window to previous workspace
+                    workspaces_[active_workspace_].erase(find(workspaces_[active_workspace_].begin(), workspaces_[active_workspace_].end(), active_window_));
+                    workspaces_[active_workspace_ - 1].push_back(active_window_);
                     active_window_ = 0;
 
                     WriteToStatusBar("");
