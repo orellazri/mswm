@@ -418,16 +418,16 @@ void WindowManager::OnKeyPress(const XKeyEvent& e) {
             if (windows_.size() == 0 || active_window_ == 0)
                 return;
 
-            auto it = windows_.find(active_window_);
-            if (it == windows_.end()) {
-                it = windows_.begin();
-            } else {
-                it++;
-                if (it == windows_.end())
-                    it = windows_.begin();
+            Window window_to_focus = active_window_;
+            for (auto window : windows_) {
+                if (window.first != active_window_ && window.second == active_workspace_) {
+                    window_to_focus = window.first;
+                    break;
+                }
             }
 
-            FocusWindow(it->first);
+            FocusWindow(window_to_focus);
+
             return;
         }
 
