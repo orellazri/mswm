@@ -344,7 +344,7 @@ void WindowManager::OnButtonPress(const XButtonEvent& e) {
 
     // Alt
     if (e.state & Mod1Mask) {
-        // Middle button to close
+        // Alt + Middle button to close window
         if (e.button == Button2) {
             // Try to gracefully kill client if the client supports the WM_DELETE_WINDOW behavior.
             // Otherwise, kill it.
@@ -380,7 +380,7 @@ void WindowManager::OnMotionNotify(const XMotionEvent& e) {
 
     // Alt
     if (e.state & Mod1Mask) {
-        // Left button to move
+        // Alt + Left button to move
         if (e.state & Button1Mask) {
             const pair<int, int> dest_frame_pos = {drag_start_frame_pos_.first + delta.first,
                                                    drag_start_frame_pos_.second + delta.second};
@@ -392,7 +392,7 @@ void WindowManager::OnMotionNotify(const XMotionEvent& e) {
             XMoveWindow(display_, e.subwindow, dest_frame_pos.first, dest_frame_pos.second);
         }
 
-        // Right button to reisze
+        // Alt + Right button to reisze
         if (e.state & Button3Mask) {
             const pair<int, int> size_delta = {max(delta.first, -drag_start_frame_size_.first),
                                                max(delta.second, -drag_start_frame_size_.second)};
@@ -445,7 +445,7 @@ void WindowManager::OnKeyPress(const XKeyEvent& e) {
 
             // Alt + Shift + Ctrl
             if (e.state & ControlMask) {
-                // Alt + Shift + Ctrl + Right
+                // Alt + Shift + Ctrl + Right to move active window to next workspace
                 if (e.keycode == XKeysymToKeycode(display_, XK_Right)) {
                     if (active_window_ == 0)
                         return;
@@ -465,7 +465,7 @@ void WindowManager::OnKeyPress(const XKeyEvent& e) {
                     return;
                 }
 
-                // Alt + Shift + Ctrl + Left
+                // Alt + Shift + Ctrl + Left to move active window to previous workspace
                 if (e.keycode == XKeysymToKeycode(display_, XK_Left)) {
                     if (active_window_ == 0)
                         return;
@@ -489,11 +489,10 @@ void WindowManager::OnKeyPress(const XKeyEvent& e) {
 
         // Alt + Ctrl
         if (e.state & ControlMask) {
-            // Alt + Ctrl + Right
+            // Alt + Ctrl + Right to switch to next workspace
             if (e.keycode == XKeysymToKeycode(display_, XK_Right)) {
                 // Switch to next workspace
                 if (active_workspace_ < num_workspaces_ - 1) {
-                    // TODO
                     SwitchWorkspace(active_workspace_ + 1);
                 } else {
                     // Create new workspace if on the last one
@@ -502,7 +501,7 @@ void WindowManager::OnKeyPress(const XKeyEvent& e) {
                 return;
             }
 
-            // Alt + Ctrl + Left
+            // Alt + Ctrl + Left to switch to previous workspace
             if (e.keycode == XKeysymToKeycode(display_, XK_Left)) {
                 // Switch to previous workspace if we are not on the first one
                 if (active_workspace_ == 0)
