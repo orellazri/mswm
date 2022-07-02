@@ -39,7 +39,7 @@ sudo apt install \
     xserver-xephyr xinit x11-apps xterm
 ```
 
-Clone the repository and run `./run.sh` (set to executable if needed). This will build the program and run it inside Xephyr.
+Clone the repository and run `./run.sh`. This will build the program and run it inside Xephyr.
 
 **NOTE**: If running on Xephyr, disable num lock to avoid bugs.
 
